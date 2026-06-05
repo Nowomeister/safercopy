@@ -74,16 +74,16 @@ TEMPLATE
 
 EXAMPLES
 
-  ; Full backup with verification, preserve dates, 1MB buffer
+  - Full backup with verification, preserve dates, 1MB buffer
   SaferCopy FROM Work: TO DH1:Backup/ ALL CLONE VERIFY BUF=1048576 NOREQ
 
-  ; Incremental update, abort after 50 errors
+  - Incremental update, abort after 50 errors
   SaferCopy FROM Work: TO DH1:Backup/ ALL UPDATE VERIFY BUF=1048576 MAXERR=50
 
-  ; USB to HD, big buffer for Poseidon performance
+  - USB to HD, big buffer
   SaferCopy FROM USB0:data/ TO DH1:data/ ALL CLONE VERIFY BUF=2097152 NOREQ
 
-  ; Catch up after a backup done without DATES (ignore datestamp differences)
+  - Catch up after a backup done without DATES (ignore datestamp differences)
   SaferCopy FROM sys: TO Multimedia:SYSBACKUP/ ALL UPDATE NDATE CLONE VERIFY NOREQ
 
 LANGUAGES
@@ -113,6 +113,8 @@ HISTORY
 
   1.2 - Added locale catalog support (18 languages), $VER string,
         minimum OS version check (V37 / AmigaOS 2.04+).
+
   1.1 - Added NDATE, VERBOSE, recursive mkdir,
         fixed sys: path handling, fixed Shell window not closing after exit.
+
   1.0 - Initial release.
