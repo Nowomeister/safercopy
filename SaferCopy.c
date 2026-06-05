@@ -65,12 +65,13 @@
 #define TEMPLATE \
     "FROM/M,TO/A,ALL/S,QUIET/S,BUF=BUFFER/K/N," \
     "CLONE/S,DATES/S,NOPRO/S,VERIFY/S,NOREQ/S,UPDATE/S,FORCE/S," \
-    "MAXERR/K/N"
+    "MAXERR/K/N,NDATE/S"
 
 enum {
     A_FROM=0, A_TO, A_ALL, A_QUIET, A_BUF,
     A_CLONE, A_DATES, A_NOPRO, A_VERIFY, A_NOREQ, A_UPDATE, A_FORCE,
     A_MAXERR,
+    A_NDATE,
     A_COUNT
 };
 
@@ -130,6 +131,7 @@ static struct {
     BOOL    verify;     /* relire et comparer apres ecriture        */
     BOOL    update;     /* sauter si dest existe et est a jour      */
     BOOL    force;      /* virer la protection dest si necessaire   */
+    BOOL    ndate;      /* UPDATE compare taille seulement (pas date) */
     LONG    nCopied;
     LONG    nSkipped;
     LONG    nErrors;
@@ -226,6 +228,7 @@ int main(void)
     G.verify = (BOOL) args[A_VERIFY];
     G.update = (BOOL) args[A_UPDATE];
     G.force  = (BOOL) args[A_FORCE];
+    G.ndate  = (BOOL) args[A_NDATE];
 
     /*
      * MAXERR : 0 = pas de limite (defaut).
@@ -389,8 +392,15 @@ static void CopyDir(const char *src, const char *dst)
     }
     ap->ap_Strlen = MAXPATH;
 
-    /* SNPrintf absent du NDK 3.x -> sprintf */
-    sprintf(pat, "%s/#?", src);
+    /*
+     * Construire le pattern avec AddPart plutot que sprintf.
+     * sprintf("%s/#?", "sys:") donnait "sys:/#?" (slash parasite).
+     * AddPart("sys:", "#?") donne "sys:#?" (correct).
+     * AddPart("sys:Internet", "#?") donne "sys:Internet/#?" (correct).
+     */
+    strncpy(pat, src, MAXPATH - 1);
+    pat[MAXPATH - 1] = '\0';
+    xAddPart(pat, "#?", (ULONG)sizeof(pat));
 
     /* Passe 1 : sous-repertoires (recurse en premier) */
     rc = MatchFirst((STRPTR)pat, ap);
@@ -678,6 +688,11 @@ static BOOL NeedsCopy(const char *src, const char *dst)
 
     if (fibSrc->fib_Size != fibDst->fib_Size) goto done;
 
+    /* NDATE : comparer uniquement la taille (ignorer la date).
+     * Utile quand le backup precedent a ete fait sans DATES/CLONE :
+     * les fichiers destination ont une date differente de la source
+     * mais le contenu est identique. */
+    if (!G.ndate)
     {
         struct DateStamp *ds = &fibSrc->fib_Date;
         struct DateStamp *dd = &fibDst->fib_Date;
@@ -687,7 +702,7 @@ static BOOL NeedsCopy(const char *src, const char *dst)
             goto done;
     }
 
-    needed = FALSE;   /* meme taille et meme date : rien a faire */
+    needed = FALSE;   /* meme taille (et meme date si !NDATE) : rien a faire */
 
 done:
     if (lockSrc) UnLock(lockSrc);
