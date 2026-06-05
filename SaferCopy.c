@@ -65,13 +65,14 @@
 #define TEMPLATE \
     "FROM/M,TO/A,ALL/S,QUIET/S,BUF=BUFFER/K/N," \
     "CLONE/S,DATES/S,NOPRO/S,VERIFY/S,NOREQ/S,UPDATE/S,FORCE/S," \
-    "MAXERR/K/N,NDATE/S"
+    "MAXERR/K/N,NDATE/S,VERBOSE/S"
 
 enum {
     A_FROM=0, A_TO, A_ALL, A_QUIET, A_BUF,
     A_CLONE, A_DATES, A_NOPRO, A_VERIFY, A_NOREQ, A_UPDATE, A_FORCE,
     A_MAXERR,
     A_NDATE,
+    A_VERBOSE,
     A_COUNT
 };
 
@@ -132,6 +133,7 @@ static struct {
     BOOL    update;     /* sauter si dest existe et est a jour      */
     BOOL    force;      /* virer la protection dest si necessaire   */
     BOOL    ndate;      /* UPDATE compare taille seulement (pas date) */
+    BOOL    verbose;    /* afficher les fichiers ignores (UPDATE a jour) */
     LONG    nCopied;
     LONG    nSkipped;
     LONG    nErrors;
@@ -228,7 +230,8 @@ int main(void)
     G.verify = (BOOL) args[A_VERIFY];
     G.update = (BOOL) args[A_UPDATE];
     G.force  = (BOOL) args[A_FORCE];
-    G.ndate  = (BOOL) args[A_NDATE];
+    G.ndate   = (BOOL) args[A_NDATE];
+    G.verbose = (BOOL) args[A_VERBOSE];
 
     /*
      * MAXERR : 0 = pas de limite (defaut).
@@ -280,6 +283,8 @@ int main(void)
             G.update ? ", UPDATE" : "");
         if (G.maxErr > 0)
             OUT(", MAXERR=%ld", (long)G.maxErr);
+        if (G.verbose)
+            OUT(", VERBOSE");
         OUT("\n");
     }
 
@@ -486,7 +491,7 @@ static BOOL CopyFile(const char *src, const char *dst)
     /* --- UPDATE : faut-il copier ? ---------------------------- */
     if (G.update && !NeedsCopy(src, dst))
     {
-        if (!G.quiet)
+        if (G.verbose)
             OUT("  Ignore  %s (a jour)\n", src);
         G.nSkipped++;
         FreeDosObject(DOS_FIB, fib);
