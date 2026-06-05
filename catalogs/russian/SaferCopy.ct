@@ -1,0 +1,78 @@
+; SaferCopy.ct -- Russian (transliterated for AmigaOS Latin-1 display)
+; $VER: SaferCopy.ct 1.0 (2025)
+; NOTE: Use codeset 2104 (cp1251) or 4 (ISO-8859-5) for Cyrillic display.
+;       This version uses Latin transliteration for compatibility.
+## version 1
+## language russian
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: bufer %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, PROVERKA
+MSG_OPT_DATES
+, DATY
+MSG_OPT_UPDATE
+, OBNOVLENIE
+MSG_OPT_VERBOSE
+, PODROBNO
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Kopir.  %s -> %s
+MSG_IGNORED
+  Propusk %s (aktualnyj)
+MSG_DEST_INCOMPLETE
+  [nazn. ne polnoe: %ld/%ld bajt]
+MSG_VERIFYING
+  Prover. %s ...
+MSG_VERIFY_OK
+ OK
+MSG_VERIFY_FAIL
+ OSHIBKA!
+MSG_FROM_REQUIRED
+SaferCopy: FROM objazatelen
+MSG_NO_MEM_BUF
+SaferCopy: nevozmozhno vydelit %lu bajt dlya bufera
+MSG_NO_MKDIR_DEST
+SaferCopy: nevozmozhno sozdat katalog naznacheniya
+MSG_NO_MKDIR
+SaferCopy: nevozmozhno sozdat
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' yavlyaetsya katalogom - ispolzujte ALL
+MSG_NO_ANCHORPATH
+SaferCopy: nedostatochno pamyati (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: istochnik nedostupen
+MSG_CANNOT_OPEN
+SaferCopy: nevozmozhno otkryt
+MSG_CANNOT_CREATE
+SaferCopy: nevozmozhno sozdat
+MSG_WRITE_INCOMPLETE
+SaferCopy: NEPOLNAYA ZAPIS %s (nuzhno %ld, zapisano %ld) - fajl udalen!
+MSG_READ_ERROR
+SaferCopy: oshibka chteniya
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject ne udalos
+MSG_EXAMINE_FAILED
+SaferCopy: Examine ne udalos
+MSG_VERIFY_FAILED_DEL
+SaferCopy: proverka ne udalas - fajl udalen
+MSG_SETDATE_WARNING
+SaferCopy: preduprezhdenie - SetFileDate ne udalos
+MSG_VERIFY_READ_ERR
+SaferCopy: proverka - oshibka chteniya
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: proverka - razmer razlichaetsya (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: proverka - soderzhimoe razlichaetsya
+MSG_SUMMARY_HEADER
+--- Itog: %ld oshibka(i) ---
+MSG_ERRBUF_TRUNCATED
+  [%ld soobshchenie(j) obrezano - bufer oshibok poln]
+MSG_FINAL_REPORT
+SaferCopy: %ld skopirovano  %ld propushcheno  %ld oshibok%s
+MSG_ABORT_TAG
+  [OTMENA: MAXERR dostignut]
+MSG_ABORT
+SaferCopy: MAXERR=%ld dostignut - otmena

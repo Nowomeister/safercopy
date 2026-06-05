@@ -1,0 +1,76 @@
+; SaferCopy.ct -- Srpski (latinica)
+; $VER: SaferCopy.ct 1.0 (2025)
+## version 1
+## language srpski
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: bafer %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, PROVERA
+MSG_OPT_DATES
+, DATUMI
+MSG_OPT_UPDATE
+, AZURIRANJE
+MSG_OPT_VERBOSE
+, DETALJNO
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Kopiraj %s -> %s
+MSG_IGNORED
+  Preskok %s (azuriran)
+MSG_DEST_INCOMPLETE
+  [odrediste nepotpuno: %ld/%ld bajta]
+MSG_VERIFYING
+  Provera %s ...
+MSG_VERIFY_OK
+ OK
+MSG_VERIFY_FAIL
+ GRESKA!
+MSG_FROM_REQUIRED
+SaferCopy: FROM je obavezan
+MSG_NO_MEM_BUF
+SaferCopy: nije moguce dodeliti %lu bajta za bafer
+MSG_NO_MKDIR_DEST
+SaferCopy: nije moguce kreirati odredisni direktorijum
+MSG_NO_MKDIR
+SaferCopy: nije moguce kreirati
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' je direktorijum - koristite ALL
+MSG_NO_ANCHORPATH
+SaferCopy: nedovoljno memorije (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: izvor nedostupan
+MSG_CANNOT_OPEN
+SaferCopy: nije moguce otvoriti
+MSG_CANNOT_CREATE
+SaferCopy: nije moguce kreirati
+MSG_WRITE_INCOMPLETE
+SaferCopy: NEPOTPUNO PISANJE %s (trazeno %ld, zapisano %ld) - fajl obrisan!
+MSG_READ_ERROR
+SaferCopy: greska citanja
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject nije uspeo
+MSG_EXAMINE_FAILED
+SaferCopy: Examine nije uspeo
+MSG_VERIFY_FAILED_DEL
+SaferCopy: provera nije uspela - fajl obrisan
+MSG_SETDATE_WARNING
+SaferCopy: upozorenje - SetFileDate nije uspeo
+MSG_VERIFY_READ_ERR
+SaferCopy: provera - greska citanja
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: provera - razlicite velicine (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: provera - razlicit sadrzaj
+MSG_SUMMARY_HEADER
+--- Pregled: %ld greska(e) ---
+MSG_ERRBUF_TRUNCATED
+  [%ld poruka(e) skracena - bafer gresaka pun]
+MSG_FINAL_REPORT
+SaferCopy: %ld kopirano  %ld preskoceno  %ld gresaka%s
+MSG_ABORT_TAG
+  [PREKINUTO: MAXERR dostignut]
+MSG_ABORT
+SaferCopy: MAXERR=%ld dostignut - prekid

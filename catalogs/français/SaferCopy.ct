@@ -1,0 +1,76 @@
+; SaferCopy.ct -- Français
+; $VER: SaferCopy.ct 1.0 (2025)
+## version 1
+## language français
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: buffer %lu Ko%s%s%s%s
+MSG_OPT_VERIFY
+, VERIFY
+MSG_OPT_DATES
+, DATES
+MSG_OPT_UPDATE
+, UPDATE
+MSG_OPT_VERBOSE
+, VERBOSE
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Copie   %s -> %s
+MSG_IGNORED
+  Ignore  %s (a jour)
+MSG_DEST_INCOMPLETE
+  [dest incomplete : %ld/%ld octets]
+MSG_VERIFYING
+  Verify  %s ...
+MSG_VERIFY_OK
+ OK
+MSG_VERIFY_FAIL
+ ECHEC!
+MSG_FROM_REQUIRED
+SaferCopy: FROM est obligatoire
+MSG_NO_MEM_BUF
+SaferCopy: impossible d'allouer %lu octets pour le buffer
+MSG_NO_MKDIR_DEST
+SaferCopy: impossible de creer le repertoire destination
+MSG_NO_MKDIR
+SaferCopy: impossible de creer
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' est un repertoire - utilisez ALL
+MSG_NO_ANCHORPATH
+SaferCopy: memoire insuffisante (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: source inaccessible
+MSG_CANNOT_OPEN
+SaferCopy: impossible d'ouvrir
+MSG_CANNOT_CREATE
+SaferCopy: impossible de creer
+MSG_WRITE_INCOMPLETE
+SaferCopy: ECRITURE INCOMPLETE %s (voulu %ld, ecrit %ld) - fichier supprime!
+MSG_READ_ERROR
+SaferCopy: erreur de lecture
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject echoue
+MSG_EXAMINE_FAILED
+SaferCopy: Examine echoue
+MSG_VERIFY_FAILED_DEL
+SaferCopy: verification echouee - fichier supprime
+MSG_SETDATE_WARNING
+SaferCopy: avertissement - SetFileDate echoue
+MSG_VERIFY_READ_ERR
+SaferCopy: verify - erreur de lecture
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: verify - tailles differentes (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: verify - contenu different
+MSG_SUMMARY_HEADER
+--- Recapitulatif : %ld erreur(s) ---
+MSG_ERRBUF_TRUNCATED
+  [%ld message(s) tronques - buffer d'erreurs plein]
+MSG_FINAL_REPORT
+SaferCopy: %ld copie(s)  %ld ignoree(s)  %ld erreur(s)%s
+MSG_ABORT_TAG
+  [ABANDON: MAXERR atteint]
+MSG_ABORT
+SaferCopy: MAXERR=%ld atteint - abandon

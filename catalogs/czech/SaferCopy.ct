@@ -1,0 +1,76 @@
+; SaferCopy.ct -- Czech
+; $VER: SaferCopy.ct 1.0 (2025)
+## version 1
+## language czech
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: vyrovnavaci pamet %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, VERIFY
+MSG_OPT_DATES
+, DATES
+MSG_OPT_UPDATE
+, UPDATE
+MSG_OPT_VERBOSE
+, VERBOSE
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Kopirovat %s -> %s
+MSG_IGNORED
+  Preskocit %s (aktualni)
+MSG_DEST_INCOMPLETE
+  [cil neuplny: %ld/%ld bajtu]
+MSG_VERIFYING
+  Overit  %s ...
+MSG_VERIFY_OK
+ OK
+MSG_VERIFY_FAIL
+ CHYBA!
+MSG_FROM_REQUIRED
+SaferCopy: FROM je povinne
+MSG_NO_MEM_BUF
+SaferCopy: nelze alokovat %lu bajtu pro vyrovnavaci pamet
+MSG_NO_MKDIR_DEST
+SaferCopy: nelze vytvorit cilovy adresar
+MSG_NO_MKDIR
+SaferCopy: nelze vytvorit
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' je adresar - pouzijte ALL
+MSG_NO_ANCHORPATH
+SaferCopy: nedostatek pameti (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: zdroj nedostupny
+MSG_CANNOT_OPEN
+SaferCopy: nelze otevrit
+MSG_CANNOT_CREATE
+SaferCopy: nelze vytvorit
+MSG_WRITE_INCOMPLETE
+SaferCopy: NEUPLNY ZAPIS %s (pozadovano %ld, zapsano %ld) - soubor smazan!
+MSG_READ_ERROR
+SaferCopy: chyba cteni
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject selhal
+MSG_EXAMINE_FAILED
+SaferCopy: Examine selhal
+MSG_VERIFY_FAILED_DEL
+SaferCopy: overeni selhalo - soubor smazan
+MSG_SETDATE_WARNING
+SaferCopy: varovani - SetFileDate selhal
+MSG_VERIFY_READ_ERR
+SaferCopy: overeni - chyba cteni
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: overeni - ruzna velikost (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: overeni - ruzny obsah
+MSG_SUMMARY_HEADER
+--- Souhrn: %ld chyba(y) ---
+MSG_ERRBUF_TRUNCATED
+  [%ld zprava(y) zkracena - buffer chyb plny]
+MSG_FINAL_REPORT
+SaferCopy: %ld skopirovano  %ld preskoceno  %ld chyb%s
+MSG_ABORT_TAG
+  [PRERUSENO: MAXERR dosazeno]
+MSG_ABORT
+SaferCopy: MAXERR=%ld dosazeno - preruseni

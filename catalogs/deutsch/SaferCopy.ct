@@ -1,0 +1,76 @@
+; SaferCopy.ct -- Deutsch
+; $VER: SaferCopy.ct 1.0 (2025)
+## version 1
+## language deutsch
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: Puffer %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, VERIFY
+MSG_OPT_DATES
+, DATES
+MSG_OPT_UPDATE
+, UPDATE
+MSG_OPT_VERBOSE
+, VERBOSE
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Kopie   %s -> %s
+MSG_IGNORED
+  Ueberg. %s (aktuell)
+MSG_DEST_INCOMPLETE
+  [Ziel unvollst.: %ld/%ld Bytes]
+MSG_VERIFYING
+  Pruefen %s ...
+MSG_VERIFY_OK
+ OK
+MSG_VERIFY_FAIL
+ FEHLER!
+MSG_FROM_REQUIRED
+SaferCopy: FROM ist erforderlich
+MSG_NO_MEM_BUF
+SaferCopy: Speicherfehler - %lu Bytes nicht verfuegbar
+MSG_NO_MKDIR_DEST
+SaferCopy: Zielverzeichnis konnte nicht erstellt werden
+MSG_NO_MKDIR
+SaferCopy: Verzeichnis konnte nicht erstellt werden
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' ist ein Verzeichnis - ALL verwenden
+MSG_NO_ANCHORPATH
+SaferCopy: Speichermangel (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: Quelle nicht erreichbar
+MSG_CANNOT_OPEN
+SaferCopy: kann nicht oeffnen
+MSG_CANNOT_CREATE
+SaferCopy: kann nicht erstellen
+MSG_WRITE_INCOMPLETE
+SaferCopy: UNVOLLST. SCHREIBEN %s (Soll %ld, Ist %ld) - Datei geloescht!
+MSG_READ_ERROR
+SaferCopy: Lesefehler
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject fehlgeschlagen
+MSG_EXAMINE_FAILED
+SaferCopy: Examine fehlgeschlagen
+MSG_VERIFY_FAILED_DEL
+SaferCopy: Pruefsumme falsch - Datei geloescht
+MSG_SETDATE_WARNING
+SaferCopy: Warnung - SetFileDate fehlgeschlagen
+MSG_VERIFY_READ_ERR
+SaferCopy: Pruefung - Lesefehler
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: Pruefung - Groesse unterschiedlich (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: Pruefung - Inhalt unterschiedlich
+MSG_SUMMARY_HEADER
+--- Zusammenfassung: %ld Fehler ---
+MSG_ERRBUF_TRUNCATED
+  [%ld Meldung(en) abgeschnitten - Fehlerpuffer voll]
+MSG_FINAL_REPORT
+SaferCopy: %ld kopiert  %ld uebersprungen  %ld Fehler%s
+MSG_ABORT_TAG
+  [ABBRUCH: MAXERR erreicht]
+MSG_ABORT
+SaferCopy: MAXERR=%ld erreicht - Abbruch

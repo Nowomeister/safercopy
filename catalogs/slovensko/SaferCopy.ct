@@ -1,0 +1,76 @@
+; SaferCopy.ct -- Slovensky
+; $VER: SaferCopy.ct 1.0 (2025)
+## version 1
+## language slovensko
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: vyrovnavacia pamat %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, VERIFY
+MSG_OPT_DATES
+, DATES
+MSG_OPT_UPDATE
+, UPDATE
+MSG_OPT_VERBOSE
+, VERBOSE
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Kopirovat %s -> %s
+MSG_IGNORED
+  Preskocit %s (aktualny)
+MSG_DEST_INCOMPLETE
+  [ciel neuplny: %ld/%ld bajtov]
+MSG_VERIFYING
+  Overit  %s ...
+MSG_VERIFY_OK
+ OK
+MSG_VERIFY_FAIL
+ CHYBA!
+MSG_FROM_REQUIRED
+SaferCopy: FROM je povinne
+MSG_NO_MEM_BUF
+SaferCopy: nie je mozne alokovat %lu bajtov pre buffer
+MSG_NO_MKDIR_DEST
+SaferCopy: nie je mozne vytvorit cielovy adresar
+MSG_NO_MKDIR
+SaferCopy: nie je mozne vytvorit
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' je adresar - pouzite ALL
+MSG_NO_ANCHORPATH
+SaferCopy: nedostatok pamati (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: zdroj nedostupny
+MSG_CANNOT_OPEN
+SaferCopy: nie je mozne otvorit
+MSG_CANNOT_CREATE
+SaferCopy: nie je mozne vytvorit
+MSG_WRITE_INCOMPLETE
+SaferCopy: NEUPLNY ZAPIS %s (pozadovane %ld, zapisane %ld) - subor vymazany!
+MSG_READ_ERROR
+SaferCopy: chyba citania
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject zlyhalo
+MSG_EXAMINE_FAILED
+SaferCopy: Examine zlyhalo
+MSG_VERIFY_FAILED_DEL
+SaferCopy: overenie zlyhalo - subor vymazany
+MSG_SETDATE_WARNING
+SaferCopy: upozornenie - SetFileDate zlyhalo
+MSG_VERIFY_READ_ERR
+SaferCopy: overenie - chyba citania
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: overenie - rozna velkost (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: overenie - rozny obsah
+MSG_SUMMARY_HEADER
+--- Zhrnutie: %ld chyba(y) ---
+MSG_ERRBUF_TRUNCATED
+  [%ld sprava(y) skratena - buffer chyb plny]
+MSG_FINAL_REPORT
+SaferCopy: %ld skopirovanych  %ld preskocených  %ld chyb%s
+MSG_ABORT_TAG
+  [PRERUSENE: MAXERR dosiahnuty]
+MSG_ABORT
+SaferCopy: MAXERR=%ld dosiahnuty - prerusenie

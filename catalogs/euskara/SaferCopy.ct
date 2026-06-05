@@ -1,0 +1,76 @@
+; SaferCopy.ct -- Euskara (Basque)
+; $VER: SaferCopy.ct 1.0 (2025)
+## version 1
+## language euskara
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: buffer %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, VERIFY
+MSG_OPT_DATES
+, DATES
+MSG_OPT_UPDATE
+, UPDATE
+MSG_OPT_VERBOSE
+, VERBOSE
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Kopiat.  %s -> %s
+MSG_IGNORED
+  Saltatu  %s (eguneratua)
+MSG_DEST_INCOMPLETE
+  [helburua osatugabe: %ld/%ld byte]
+MSG_VERIFYING
+  Egiazt. %s ...
+MSG_VERIFY_OK
+ ADOS
+MSG_VERIFY_FAIL
+ HUTS!
+MSG_FROM_REQUIRED
+SaferCopy: FROM beharrezkoa da
+MSG_NO_MEM_BUF
+SaferCopy: ezin dira %lu byte esleitu bufferrerako
+MSG_NO_MKDIR_DEST
+SaferCopy: ezin da helmuga direktorioa sortu
+MSG_NO_MKDIR
+SaferCopy: ezin da sortu
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' direktorioa da - erabili ALL
+MSG_NO_ANCHORPATH
+SaferCopy: memoria nahikoa ez (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: iturria eskuraeziña
+MSG_CANNOT_OPEN
+SaferCopy: ezin da ireki
+MSG_CANNOT_CREATE
+SaferCopy: ezin da sortu
+MSG_WRITE_INCOMPLETE
+SaferCopy: IDAZKETA OSATUGABE %s (nahi %ld, idatzi %ld) - fitxategia ezabatua!
+MSG_READ_ERROR
+SaferCopy: irakurketa errorea
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject huts egin du
+MSG_EXAMINE_FAILED
+SaferCopy: Examine huts egin du
+MSG_VERIFY_FAILED_DEL
+SaferCopy: egiaztapenak huts egin du - fitxategia ezabatua
+MSG_SETDATE_WARNING
+SaferCopy: abisua - SetFileDate huts egin du
+MSG_VERIFY_READ_ERR
+SaferCopy: egiaztapena - irakurketa errorea
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: egiaztapena - tamaina desberdina (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: egiaztapena - edukia desberdina
+MSG_SUMMARY_HEADER
+--- Laburpena: %ld errore(ak) ---
+MSG_ERRBUF_TRUNCATED
+  [%ld mezu(ak) moztua - errore buffer betea]
+MSG_FINAL_REPORT
+SaferCopy: %ld kopiatua  %ld saltatua  %ld errore%s
+MSG_ABORT_TAG
+  [BERTAN BEHERA: MAXERR lortua]
+MSG_ABORT
+SaferCopy: MAXERR=%ld lortua - bertan behera

@@ -1,0 +1,76 @@
+; SaferCopy.ct -- Polski
+; $VER: SaferCopy.ct 1.0 (2025)
+## version 1
+## language polski
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: bufor %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, VERIFY
+MSG_OPT_DATES
+, DATES
+MSG_OPT_UPDATE
+, UPDATE
+MSG_OPT_VERBOSE
+, VERBOSE
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Kopiuj  %s -> %s
+MSG_IGNORED
+  Pomijam %s (aktualny)
+MSG_DEST_INCOMPLETE
+  [cel niekompletny: %ld/%ld bajtow]
+MSG_VERIFYING
+  Weryfik. %s ...
+MSG_VERIFY_OK
+ OK
+MSG_VERIFY_FAIL
+ BLAD!
+MSG_FROM_REQUIRED
+SaferCopy: FROM jest wymagane
+MSG_NO_MEM_BUF
+SaferCopy: nie mozna przydzielic %lu bajtow na bufor
+MSG_NO_MKDIR_DEST
+SaferCopy: nie mozna utworzyc katalogu docelowego
+MSG_NO_MKDIR
+SaferCopy: nie mozna utworzyc
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' jest katalogiem - uzyj ALL
+MSG_NO_ANCHORPATH
+SaferCopy: brak pamieci (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: zrodlo niedostepne
+MSG_CANNOT_OPEN
+SaferCopy: nie mozna otworzyc
+MSG_CANNOT_CREATE
+SaferCopy: nie mozna utworzyc
+MSG_WRITE_INCOMPLETE
+SaferCopy: NIEKOMPLETNY ZAPIS %s (zadano %ld, zapisano %ld) - plik usuniety!
+MSG_READ_ERROR
+SaferCopy: blad odczytu
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject nie powiodlo sie
+MSG_EXAMINE_FAILED
+SaferCopy: Examine nie powiodlo sie
+MSG_VERIFY_FAILED_DEL
+SaferCopy: weryfikacja nie powiodla sie - plik usuniety
+MSG_SETDATE_WARNING
+SaferCopy: ostrzezenie - SetFileDate nie powiodlo sie
+MSG_VERIFY_READ_ERR
+SaferCopy: weryfikacja - blad odczytu
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: weryfikacja - rozne rozmiary (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: weryfikacja - rozna zawartosc
+MSG_SUMMARY_HEADER
+--- Podsumowanie: %ld blab(ow) ---
+MSG_ERRBUF_TRUNCATED
+  [%ld wiadomosc(i) przycieta - bufor bledow pelny]
+MSG_FINAL_REPORT
+SaferCopy: %ld skopiowanych  %ld pominiete  %ld bledow%s
+MSG_ABORT_TAG
+  [PRZERWANO: MAXERR osiagniety]
+MSG_ABORT
+SaferCopy: MAXERR=%ld osiagniety - przerywanie

@@ -1,0 +1,114 @@
+; SaferCopy.cd -- Catalog Description
+; $VER: SaferCopy.cd 1.0 (2025)
+; Default language: english
+;
+; Format: symbolname (ID/minLen/maxLen/flags)
+;         default string (english)
+;
+; IMPORTANT: preserve all %s %ld %lu placeholders
+;            and their order in every translation.
+
+MSG_STARTUP (0///)
+SaferCopy: buffer %lu KB%s%s%s%s
+
+MSG_OPT_VERIFY (1///)
+, VERIFY
+
+MSG_OPT_DATES (2///)
+, DATES
+
+MSG_OPT_UPDATE (3///)
+, UPDATE
+
+MSG_OPT_VERBOSE (4///)
+, VERBOSE
+
+MSG_OPT_MAXERR (5///)
+, MAXERR=%ld
+
+MSG_COPYING (6///)
+Copy    %s -> %s
+
+MSG_IGNORED (7///)
+  Skip    %s (up to date)
+
+MSG_DEST_INCOMPLETE (8///)
+  [dest incomplete: %ld/%ld bytes]
+
+MSG_VERIFYING (9///)
+  Verify  %s ...
+
+MSG_VERIFY_OK (10///)
+ OK
+
+MSG_VERIFY_FAIL (11///)
+ FAILED!
+
+MSG_FROM_REQUIRED (12///)
+SaferCopy: FROM is required
+
+MSG_NO_MEM_BUF (13///)
+SaferCopy: cannot allocate %lu bytes for buffer
+
+MSG_NO_MKDIR_DEST (14///)
+SaferCopy: cannot create destination directory
+
+MSG_NO_MKDIR (15///)
+SaferCopy: cannot create
+
+MSG_IS_DIR_USE_ALL (16///)
+SaferCopy: '%s' is a directory - use ALL
+
+MSG_NO_ANCHORPATH (17///)
+SaferCopy: out of memory (AnchorPath)
+
+MSG_SRC_INACCESSIBLE (18///)
+SaferCopy: source not accessible
+
+MSG_CANNOT_OPEN (19///)
+SaferCopy: cannot open
+
+MSG_CANNOT_CREATE (20///)
+SaferCopy: cannot create
+
+MSG_WRITE_INCOMPLETE (21///)
+SaferCopy: INCOMPLETE WRITE %s (wanted %ld, wrote %ld) - file deleted!
+
+MSG_READ_ERROR (22///)
+SaferCopy: read error
+
+MSG_ALLOC_DOS_FAILED (23///)
+SaferCopy: AllocDosObject failed
+
+MSG_EXAMINE_FAILED (24///)
+SaferCopy: Examine failed
+
+MSG_VERIFY_FAILED_DEL (25///)
+SaferCopy: verify failed - file deleted
+
+MSG_SETDATE_WARNING (26///)
+SaferCopy: warning - SetFileDate failed
+
+MSG_VERIFY_READ_ERR (27///)
+SaferCopy: verify - read error
+
+MSG_VERIFY_SIZE_DIFF (28///)
+SaferCopy: verify - size mismatch (%ld vs %ld)
+
+MSG_VERIFY_CONTENT (29///)
+SaferCopy: verify - content mismatch
+
+MSG_SUMMARY_HEADER (30///)
+--- Summary: %ld error(s) ---
+
+MSG_ERRBUF_TRUNCATED (31///)
+  [%ld message(s) truncated - error buffer full]
+
+MSG_FINAL_REPORT (32///)
+SaferCopy: %ld copied  %ld skipped  %ld error(s)%s
+
+MSG_ABORT_TAG (33///)
+  [ABORT: MAXERR reached]
+
+MSG_ABORT (34///)
+SaferCopy: MAXERR=%ld reached - aborting

@@ -1,0 +1,76 @@
+; SaferCopy.ct -- Norsk
+; $VER: SaferCopy.ct 1.0 (2025)
+## version 1
+## language norsk
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: buffer %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, VERIFY
+MSG_OPT_DATES
+, DATES
+MSG_OPT_UPDATE
+, UPDATE
+MSG_OPT_VERBOSE
+, VERBOSE
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Kopierer %s -> %s
+MSG_IGNORED
+  Hopper  %s (oppdatert)
+MSG_DEST_INCOMPLETE
+  [maal ufullstendig: %ld/%ld bytes]
+MSG_VERIFYING
+  Verif.  %s ...
+MSG_VERIFY_OK
+ OK
+MSG_VERIFY_FAIL
+ FEIL!
+MSG_FROM_REQUIRED
+SaferCopy: FROM er obligatorisk
+MSG_NO_MEM_BUF
+SaferCopy: kan ikke allokere %lu bytes til buffer
+MSG_NO_MKDIR_DEST
+SaferCopy: kan ikke opprette maalkatalog
+MSG_NO_MKDIR
+SaferCopy: kan ikke opprette
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' er et katalog - bruk ALL
+MSG_NO_ANCHORPATH
+SaferCopy: ikke nok minne (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: kilde ikke tilgjengelig
+MSG_CANNOT_OPEN
+SaferCopy: kan ikke aapne
+MSG_CANNOT_CREATE
+SaferCopy: kan ikke opprette
+MSG_WRITE_INCOMPLETE
+SaferCopy: UFULLSTENDIG SKRIVING %s (onsket %ld, skrevet %ld) - fil slettet!
+MSG_READ_ERROR
+SaferCopy: lesefeil
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject feilet
+MSG_EXAMINE_FAILED
+SaferCopy: Examine feilet
+MSG_VERIFY_FAILED_DEL
+SaferCopy: verifisering feilet - fil slettet
+MSG_SETDATE_WARNING
+SaferCopy: advarsel - SetFileDate feilet
+MSG_VERIFY_READ_ERR
+SaferCopy: verifisering - lesefeil
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: verifisering - stoerrelse ulik (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: verifisering - innhold ulikt
+MSG_SUMMARY_HEADER
+--- Oversikt: %ld feil ---
+MSG_ERRBUF_TRUNCATED
+  [%ld melding(er) avkortet - feilbuffer fullt]
+MSG_FINAL_REPORT
+SaferCopy: %ld kopiert  %ld hoppet over  %ld feil%s
+MSG_ABORT_TAG
+  [AVBRUTT: MAXERR naadd]
+MSG_ABORT
+SaferCopy: MAXERR=%ld naadd - avbryter

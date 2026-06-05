@@ -1,0 +1,76 @@
+; SaferCopy.ct -- Türkçe
+; $VER: SaferCopy.ct 1.0 (2025)
+## version 1
+## language türkçe
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: tampon %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, DOGRULA
+MSG_OPT_DATES
+, TARIH
+MSG_OPT_UPDATE
+, GUNCELLE
+MSG_OPT_VERBOSE
+, AYRINTILI
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Kopyala %s -> %s
+MSG_IGNORED
+  Atla    %s (guncel)
+MSG_DEST_INCOMPLETE
+  [hedef eksik: %ld/%ld bayt]
+MSG_VERIFYING
+  Dogrul. %s ...
+MSG_VERIFY_OK
+ TAMAM
+MSG_VERIFY_FAIL
+ BASARISIZ!
+MSG_FROM_REQUIRED
+SaferCopy: FROM zorunludur
+MSG_NO_MEM_BUF
+SaferCopy: tampon icin %lu bayt ayrilamiyor
+MSG_NO_MKDIR_DEST
+SaferCopy: hedef dizin olusturulamiyor
+MSG_NO_MKDIR
+SaferCopy: olusturulamiyor
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' bir dizindir - ALL kullanin
+MSG_NO_ANCHORPATH
+SaferCopy: yetersiz bellek (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: kaynak erisilebilir degil
+MSG_CANNOT_OPEN
+SaferCopy: acilamiyor
+MSG_CANNOT_CREATE
+SaferCopy: olusturulamiyor
+MSG_WRITE_INCOMPLETE
+SaferCopy: EKSIK YAZMA %s (istenen %ld, yazilan %ld) - dosya silindi!
+MSG_READ_ERROR
+SaferCopy: okuma hatasi
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject basarisiz
+MSG_EXAMINE_FAILED
+SaferCopy: Examine basarisiz
+MSG_VERIFY_FAILED_DEL
+SaferCopy: dogrulama basarisiz - dosya silindi
+MSG_SETDATE_WARNING
+SaferCopy: uyari - SetFileDate basarisiz
+MSG_VERIFY_READ_ERR
+SaferCopy: dogrulama - okuma hatasi
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: dogrulama - boyut farki (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: dogrulama - icerik farki
+MSG_SUMMARY_HEADER
+--- Ozet: %ld hata ---
+MSG_ERRBUF_TRUNCATED
+  [%ld ileti kesildi - hata tamponu dolu]
+MSG_FINAL_REPORT
+SaferCopy: %ld kopyalandi  %ld atlandi  %ld hata%s
+MSG_ABORT_TAG
+  [IPTAL: MAXERR ulasildi]
+MSG_ABORT
+SaferCopy: MAXERR=%ld ulasildi - iptal ediliyor

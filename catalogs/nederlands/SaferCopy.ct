@@ -1,0 +1,76 @@
+; SaferCopy.ct -- Nederlands
+; $VER: SaferCopy.ct 1.0 (2025)
+## version 1
+## language nederlands
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: buffer %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, VERIFY
+MSG_OPT_DATES
+, DATES
+MSG_OPT_UPDATE
+, UPDATE
+MSG_OPT_VERBOSE
+, VERBOSE
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Kopie   %s -> %s
+MSG_IGNORED
+  Slaan   %s (actueel)
+MSG_DEST_INCOMPLETE
+  [doel onvolledig: %ld/%ld bytes]
+MSG_VERIFYING
+  Verif.  %s ...
+MSG_VERIFY_OK
+ OK
+MSG_VERIFY_FAIL
+ MISLUKT!
+MSG_FROM_REQUIRED
+SaferCopy: FROM is verplicht
+MSG_NO_MEM_BUF
+SaferCopy: kan geen %lu bytes toewijzen voor buffer
+MSG_NO_MKDIR_DEST
+SaferCopy: kan doelmap niet aanmaken
+MSG_NO_MKDIR
+SaferCopy: kan niet aanmaken
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' is een map - gebruik ALL
+MSG_NO_ANCHORPATH
+SaferCopy: onvoldoende geheugen (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: bron niet toegankelijk
+MSG_CANNOT_OPEN
+SaferCopy: kan niet openen
+MSG_CANNOT_CREATE
+SaferCopy: kan niet aanmaken
+MSG_WRITE_INCOMPLETE
+SaferCopy: ONVOLLEDIGE SCHRIJFACTIE %s (gewenst %ld, geschreven %ld) - bestand verwijderd!
+MSG_READ_ERROR
+SaferCopy: leesfout
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject mislukt
+MSG_EXAMINE_FAILED
+SaferCopy: Examine mislukt
+MSG_VERIFY_FAILED_DEL
+SaferCopy: verificatie mislukt - bestand verwijderd
+MSG_SETDATE_WARNING
+SaferCopy: waarschuwing - SetFileDate mislukt
+MSG_VERIFY_READ_ERR
+SaferCopy: verificatie - leesfout
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: verificatie - grootte verschilt (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: verificatie - inhoud verschilt
+MSG_SUMMARY_HEADER
+--- Samenvatting: %ld fout(en) ---
+MSG_ERRBUF_TRUNCATED
+  [%ld bericht(en) afgekapt - foutbuffer vol]
+MSG_FINAL_REPORT
+SaferCopy: %ld gekopieerd  %ld overgeslagen  %ld fout(en)%s
+MSG_ABORT_TAG
+  [AFGEBROKEN: MAXERR bereikt]
+MSG_ABORT
+SaferCopy: MAXERR=%ld bereikt - afbreken

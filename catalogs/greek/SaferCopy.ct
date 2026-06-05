@@ -1,0 +1,78 @@
+; SaferCopy.ct -- Greek (transliterated for AmigaOS Latin-1 display)
+; $VER: SaferCopy.ct 1.0 (2025)
+; NOTE: Use codeset 6 (ISO-8859-7) for native Greek display.
+;       This version uses Latin transliteration for compatibility.
+## version 1
+## language greek
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: buffer %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, EPILOGI
+MSG_OPT_DATES
+, IMEROM.
+MSG_OPT_UPDATE
+, ENIMEROS.
+MSG_OPT_VERBOSE
+, AVAST
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Antigrafe %s -> %s
+MSG_IGNORED
+  Paral.  %s (enimeros)
+MSG_DEST_INCOMPLETE
+  [proorisnos atel.: %ld/%ld bytes]
+MSG_VERIFYING
+  Epilegi %s ...
+MSG_VERIFY_OK
+ ENTAXEI
+MSG_VERIFY_FAIL
+ LATHOS!
+MSG_FROM_REQUIRED
+SaferCopy: FROM einai ypochreotiko
+MSG_NO_MEM_BUF
+SaferCopy: adynato na desmeuthoun %lu bytes gia buffer
+MSG_NO_MKDIR_DEST
+SaferCopy: adynato na dimiourgithei o katalogos proorisnoy
+MSG_NO_MKDIR
+SaferCopy: adynato na dimiourgithei
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' einai katalogos - chrisimopoiiste ALL
+MSG_NO_ANCHORPATH
+SaferCopy: aneparkis mnimi (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: pigi den einai prosvliti
+MSG_CANNOT_OPEN
+SaferCopy: adynato to anigma
+MSG_CANNOT_CREATE
+SaferCopy: adynato i dimiourgia
+MSG_WRITE_INCOMPLETE
+SaferCopy: ATELEIS EGGRAFES %s (zitithike %ld, egrafike %ld) - archeio diagrafi!
+MSG_READ_ERROR
+SaferCopy: sfima anagnosis
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject apetiche
+MSG_EXAMINE_FAILED
+SaferCopy: Examine apetiche
+MSG_VERIFY_FAILED_DEL
+SaferCopy: epilogi apetiche - archeio diagrafi
+MSG_SETDATE_WARNING
+SaferCopy: proeidopoiisi - SetFileDate apetiche
+MSG_VERIFY_READ_ERR
+SaferCopy: epilogi - sfima anagnosis
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: epilogi - diaforetiko megethos (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: epilogi - diaforetiko periechmeno
+MSG_SUMMARY_HEADER
+--- Anaskopisi: %ld lathos(i) ---
+MSG_ERRBUF_TRUNCATED
+  [%ld minima apokopika - buffer lathon gematos]
+MSG_FINAL_REPORT
+SaferCopy: %ld antigrafi  %ld paralipsi  %ld lathos%s
+MSG_ABORT_TAG
+  [AKIRO: MAXERR efthase]
+MSG_ABORT
+SaferCopy: MAXERR=%ld efthase - akiro

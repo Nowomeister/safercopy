@@ -1,0 +1,76 @@
+; SaferCopy.ct -- Romana (Romanian)
+; $VER: SaferCopy.ct 1.0 (2025)
+## version 1
+## language roman
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: buffer %lu KB%s%s%s%s
+MSG_OPT_VERIFY
+, VERIFY
+MSG_OPT_DATES
+, DATE
+MSG_OPT_UPDATE
+, ACTUALIZARE
+MSG_OPT_VERBOSE
+, DETALIAT
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Copiere %s -> %s
+MSG_IGNORED
+  Ignorat %s (actualizat)
+MSG_DEST_INCOMPLETE
+  [destinatie incompleta: %ld/%ld octeti]
+MSG_VERIFYING
+  Verificare %s ...
+MSG_VERIFY_OK
+ OK
+MSG_VERIFY_FAIL
+ ESUAT!
+MSG_FROM_REQUIRED
+SaferCopy: FROM este obligatoriu
+MSG_NO_MEM_BUF
+SaferCopy: nu se pot aloca %lu octeti pentru buffer
+MSG_NO_MKDIR_DEST
+SaferCopy: nu se poate crea directorul destinatie
+MSG_NO_MKDIR
+SaferCopy: nu se poate crea
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' este un director - folositi ALL
+MSG_NO_ANCHORPATH
+SaferCopy: memorie insuficienta (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: sursa inaccesibila
+MSG_CANNOT_OPEN
+SaferCopy: nu se poate deschide
+MSG_CANNOT_CREATE
+SaferCopy: nu se poate crea
+MSG_WRITE_INCOMPLETE
+SaferCopy: SCRIERE INCOMPLETA %s (cerut %ld, scris %ld) - fisier sters!
+MSG_READ_ERROR
+SaferCopy: eroare la citire
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject a esuat
+MSG_EXAMINE_FAILED
+SaferCopy: Examine a esuat
+MSG_VERIFY_FAILED_DEL
+SaferCopy: verificare esuata - fisier sters
+MSG_SETDATE_WARNING
+SaferCopy: avertisment - SetFileDate a esuat
+MSG_VERIFY_READ_ERR
+SaferCopy: verificare - eroare la citire
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: verificare - dimensiuni diferite (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: verificare - continut diferit
+MSG_SUMMARY_HEADER
+--- Sumar: %ld eroare(i) ---
+MSG_ERRBUF_TRUNCATED
+  [%ld mesaj(e) trunchiat(e) - buffer erori plin]
+MSG_FINAL_REPORT
+SaferCopy: %ld copiat(e)  %ld ignorat(e)  %ld eroare(i)%s
+MSG_ABORT_TAG
+  [ANULAT: MAXERR atins]
+MSG_ABORT
+SaferCopy: MAXERR=%ld atins - anulare
