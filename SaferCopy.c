@@ -46,6 +46,7 @@
 #include <dos/dos.h>
 #include <dos/dosasl.h>
 #include <stdio.h>     /* printf, fprintf, sprintf, fputs, fflush */
+#include <stdlib.h>    /* exit */
 #include <string.h>    /* memcmp, strncpy, memset                 */
 
 /* --- Portabilite inline ------------------------------------------ */
@@ -823,5 +824,5 @@ static void Die(LONG code)
     }
     if (G.buf)  FreeVec(G.buf);
     if (G.vbuf) FreeVec(G.vbuf);
-    Exit(code);
+    exit(code);
 }
