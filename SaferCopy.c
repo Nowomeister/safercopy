@@ -39,6 +39,13 @@
  *     compilateur les interprete comme debut de litteral de caractere.
  */
 
+/* --- Version ----------------------------------------------------- */
+/*
+ * $VER: SaferCopy 1.2 (2026.06.05) Nowee with Claude
+ * Parsed by Version, VersionWB, and the Aminet indexer.
+ */
+const char * const version = "$VER: SaferCopy 1.2 (2026.06.05) Nowee with Claude";
+
 /* --- Includes ---------------------------------------------------- */
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -46,8 +53,11 @@
 #include <dos/dos.h>
 #include <dos/dosasl.h>
 #include <stdio.h>     /* printf, fprintf, sprintf, fputs, fflush */
-#include <stdlib.h>    /* exit */
+#include <stdlib.h>    /* exit                                    */
 #include <string.h>    /* memcmp, strncpy, memset                 */
+#include <libraries/locale.h>   /* struct Catalog                */
+#include <proto/locale.h>       /* OpenCatalogA, GetCatalogStr   */
+#include "SaferCopy_cat.h"      /* MSG_* IDs                     */
 
 /* --- Portabilite inline ------------------------------------------ */
 /*
@@ -62,6 +72,12 @@
 /*  Template                                                            */
 /* --------------------------------------------------------------*/
 
+/* OS minimum : AmigaOS 2.0 (exec V36 = kick 2.0, DOS V36).
+ * On exige V37 (2.04) pour ReadArgs, MatchFirst/Next, etc.
+ * V37 est le minimum documenté pour l usage de ces APIs. */
+#define MIN_OSVER  37
+
+/* ------------------------------------------------------------------ */
 #define TEMPLATE \
     "FROM/M,TO/A,ALL/S,QUIET/S,BUF=BUFFER/K/N," \
     "CLONE/S,DATES/S,NOPRO/S,VERIFY/S,NOREQ/S,UPDATE/S,FORCE/S," \
@@ -101,6 +117,33 @@ enum {
 
 #define OUT(fmt, ...)  printf(fmt,  ##__VA_ARGS__)
 #define ERR(fmt, ...)  fprintf(stderr, fmt, ##__VA_ARGS__)
+
+/* ------------------------------------------------------------------ */
+/*  Locale support                                                      */
+/*                                                                      */
+/*  CS(id, def) : retourne la chaine traduite du catalog si disponible, */
+/*  sinon la chaine anglaise de secours (def).                          */
+/*  Fallback transparent si locale.library absent ou catalog non trouve.*/
+/* ------------------------------------------------------------------ */
+struct LocaleBase *LocaleBase = NULL;
+static struct Catalog *g_catalog = NULL;
+
+#define CS(id,def) \
+    (g_catalog ? (const char *)GetCatalogStr(g_catalog,(id),(STRPTR)(def)) : (def))
+
+static void locale_open(void)
+{
+    LocaleBase = (struct LocaleBase *)OpenLibrary((STRPTR)"locale.library", 38);
+    if (LocaleBase)
+        g_catalog = OpenCatalogA(NULL, (STRPTR)"SaferCopy.catalog", NULL);
+    /* Pas d erreur si absent : on utilise les defaults anglais */
+}
+
+static void locale_close(void)
+{
+    if (g_catalog) { CloseCatalog(g_catalog);                      g_catalog  = NULL; }
+    if (LocaleBase){ CloseLibrary((struct Library *)LocaleBase);   LocaleBase = NULL; }
+}
 
 /* --------------------------------------------------------------*/
 /*  Etat global                                                         */
@@ -213,10 +256,32 @@ int main(void)
     G.retCode = RETURN_OK;
 
     /* --- ReadArgs -------------------------------------------------- */
+    /* --- Verification version OS ---------------------------------- */
+    /*
+     * SysBase est garanti non-NULL a ce stade (libnix startup).
+     * On verifie exec en premier, puis dos.
+     * Pas besoin d ouvrir d autres librairies : on n utilise que
+     * exec et dos dans tout SaferCopy.
+     */
+    {
+        extern struct ExecBase *SysBase;
+        extern struct DosLibrary *DOSBase;
+        if (((struct Library *)SysBase)->lib_Version < MIN_OSVER ||
+            ((struct Library *)DOSBase)->lib_Version < MIN_OSVER)
+        {
+            fprintf(stderr,
+                    "SaferCopy requires AmigaOS 2.04+ (V%d)\n", MIN_OSVER);
+            return RETURN_FAIL;
+        }
+    }
+
+    locale_open();   /* avant ReadArgs : les messages d erreur sont deja traduits */
+
     rda = ReadArgs((STRPTR)TEMPLATE, args, NULL);
     if (!rda)
     {
         PrintFault(IoErr(), (STRPTR)"SaferCopy");
+        locale_close();
         return RETURN_FAIL;
     }
 
@@ -267,7 +332,7 @@ int main(void)
 
     if (!G.buf || (G.verify && !G.vbuf))
     {
-        ERR("SaferCopy: impossible d allouer %lu octets de buffer\n",
+        ERR(CS(MSG_NO_MEM_BUF, "SaferCopy: cannot allocate %lu bytes for buffer\n"),
             G.verify
             ? (unsigned long)(G.bufSize * 2)
             : (unsigned long)(G.bufSize));
@@ -276,22 +341,21 @@ int main(void)
     }
 
     if (!G.quiet) {
-        OUT("SaferCopy: buffer %lu Ko%s%s%s",
+        OUT("SaferCopy: buffer %lu KB%s%s%s%s",
             (unsigned long)(G.bufSize / 1024),
-            G.verify ? ", VERIFY" : "",
-            G.dates  ? ", DATES"  : "",
-            G.update ? ", UPDATE" : "");
+            G.verify  ? CS(MSG_OPT_VERIFY,  ", VERIFY")  : "",
+            G.dates   ? CS(MSG_OPT_DATES,   ", DATES")   : "",
+            G.update  ? CS(MSG_OPT_UPDATE,  ", UPDATE")  : "",
+            G.verbose ? CS(MSG_OPT_VERBOSE, ", VERBOSE") : "");
         if (G.maxErr > 0)
-            OUT(", MAXERR=%ld", (long)G.maxErr);
-        if (G.verbose)
-            OUT(", VERBOSE");
+            OUT(CS(MSG_OPT_MAXERR, ", MAXERR=%ld"), (long)G.maxErr);
         OUT("\n");
     }
 
     /* --- Verification arguments ------------------------------------ */
     if (!fromList || !fromList[0])
     {
-        ERR("SaferCopy: FROM est obligatoire\n");
+        ERR(CS(MSG_FROM_REQUIRED, "SaferCopy: FROM is required\n"));
         FreeArgs(rda);
         Die(RETURN_FAIL);
     }
@@ -303,7 +367,7 @@ int main(void)
     {
         if (!EnsurePath(toPath))
         {
-            Fail("SaferCopy: impossible de creer le repertoire destination",
+            Fail(CS(MSG_NO_MKDIR_DEST, "SaferCopy: cannot create destination directory"),
                  toPath);
             FreeArgs(rda);
             Die(RETURN_FAIL);
@@ -322,7 +386,7 @@ int main(void)
             if (!G.all)
             {
                 if (!G.quiet)
-                    OUT("SaferCopy: '%s' est un repertoire - utilisez ALL\n",
+                    OUT(CS(MSG_IS_DIR_USE_ALL, "SaferCopy: '%s' is a directory - use ALL\n"),
                         src);
                 G.nErrors++;
                 G.retCode = RETURN_WARN;
@@ -337,7 +401,7 @@ int main(void)
             }
             if (!EnsurePath(dst))
             {
-                Fail("SaferCopy: impossible de creer", dst);
+                Fail(CS(MSG_NO_MKDIR, "SaferCopy: cannot create"), dst);
                 G.nErrors++;
                 G.retCode = RETURN_WARN;
                 CheckAbort();
@@ -367,9 +431,9 @@ int main(void)
     PrintErrors();   /* toujours, meme en mode QUIET */
 
     if (!G.quiet || G.nErrors > 0)
-        OUT("SaferCopy: %ld copie(s)  %ld ignoree(s)  %ld erreur(s)%s\n",
+        OUT(CS(MSG_FINAL_REPORT, "SaferCopy: %ld copied  %ld skipped  %ld error(s)%s\n"),
             (long)G.nCopied, (long)G.nSkipped, (long)G.nErrors,
-            G.abort ? "  [ABANDON: MAXERR atteint]" : "");
+            G.abort ? CS(MSG_ABORT_TAG, "  [ABORT: MAXERR reached]") : "");
 
     FreeArgs(rda);
     Die(G.retCode);
@@ -391,7 +455,7 @@ static void CopyDir(const char *src, const char *dst)
                   MEMF_CLEAR | MEMF_ANY);
     if (!ap)
     {
-        ERR("SaferCopy: memoire insuffisante (AnchorPath)\n");
+        ERR(CS(MSG_NO_ANCHORPATH, "SaferCopy: out of memory (AnchorPath)\n"));
         G.nErrors++;
         return;
     }
@@ -417,7 +481,7 @@ static void CopyDir(const char *src, const char *dst)
             JoinPath(subdst, MAXPATH, dst, ap->ap_Info.fib_FileName);
             if (!EnsureDir(subdst))
             {
-                Fail("SaferCopy: impossible de creer", subdst);
+                Fail(CS(MSG_NO_MKDIR, "SaferCopy: cannot create"), subdst);
                 G.nErrors++;
                 CheckAbort();
             }
@@ -467,7 +531,7 @@ static BOOL CopyFile(const char *src, const char *dst)
     fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
     if (!fib)
     {
-        ERR("SaferCopy: AllocDosObject echoue\n");
+        ERR(CS(MSG_ALLOC_DOS_FAILED, "SaferCopy: AllocDosObject failed\n"));
         return FALSE;
     }
 
@@ -475,13 +539,13 @@ static BOOL CopyFile(const char *src, const char *dst)
     lock = xLock(src, ACCESS_READ);
     if (!lock)
     {
-        Fail("SaferCopy: source inaccessible", src);
+        Fail(CS(MSG_SRC_INACCESSIBLE, "SaferCopy: source not accessible"), src);
         FreeDosObject(DOS_FIB, fib);
         return FALSE;
     }
     if (!Examine(lock, fib))
     {
-        Fail("SaferCopy: Examine echoue", src);
+        Fail(CS(MSG_EXAMINE_FAILED, "SaferCopy: Examine failed"), src);
         UnLock(lock);
         FreeDosObject(DOS_FIB, fib);
         return FALSE;
@@ -492,7 +556,7 @@ static BOOL CopyFile(const char *src, const char *dst)
     if (G.update && !NeedsCopy(src, dst))
     {
         if (G.verbose)
-            OUT("  Ignore  %s (a jour)\n", src);
+            OUT(CS(MSG_IGNORED, "  Skip    %s (up to date)\n"), src);
         G.nSkipped++;
         FreeDosObject(DOS_FIB, fib);
         return TRUE;
@@ -500,7 +564,7 @@ static BOOL CopyFile(const char *src, const char *dst)
 
     if (!G.quiet)
     {
-        OUT("Copie   %s -> %s\n", src, dst);
+        OUT(CS(MSG_COPYING, "Copy    %s -> %s\n"), src, dst);
 
         /* UPDATE : si la destination existe avec une taille differente,
          * c'est probablement un echec de copie precedent. Le signaler. */
@@ -514,7 +578,7 @@ static BOOL CopyFile(const char *src, const char *dst)
                 if (df)
                 {
                     if (Examine(dl, df) && df->fib_Size != fib->fib_Size)
-                        OUT("  [dest incomplete : %ld/%ld octets]\n",
+                        OUT(CS(MSG_DEST_INCOMPLETE, "  [dest incomplete: %ld/%ld bytes]\n"),
                             (long)df->fib_Size, (long)fib->fib_Size);
                     FreeDosObject(DOS_FIB, df);
                 }
@@ -531,13 +595,13 @@ static BOOL CopyFile(const char *src, const char *dst)
     srcFH = xOpen(src, MODE_OLDFILE);
     if (!srcFH)
     {
-        Fail("SaferCopy: impossible d ouvrir", src);
+        Fail(CS(MSG_CANNOT_OPEN, "SaferCopy: cannot open"), src);
         goto done;
     }
     dstFH = xOpen(dst, MODE_NEWFILE);
     if (!dstFH)
     {
-        Fail("SaferCopy: impossible de creer", dst);
+        Fail(CS(MSG_CANNOT_CREATE, "SaferCopy: cannot create"), dst);
         goto done;
     }
 
@@ -552,8 +616,8 @@ static BOOL CopyFile(const char *src, const char *dst)
              * Write() partiel sur FAT95/Poseidon : arrive sans IoErr()
              * coherent. On abandonne et on supprime le fichier corrompu.
              */
-            ERR("SaferCopy: ECRITURE INCOMPLETE sur %s "
-                "(voulu %ld, ecrit %ld) - fichier supprime!\n",
+            ERR(CS(MSG_WRITE_INCOMPLETE,
+                   "SaferCopy: INCOMPLETE WRITE %s (wanted %ld, wrote %ld) - file deleted!\n"),
                 dst, (long)nRead, (long)nWritten);
             ok = FALSE;
             break;
@@ -561,7 +625,7 @@ static BOOL CopyFile(const char *src, const char *dst)
     }
     if (nRead < 0)
     {
-        Fail("SaferCopy: erreur de lecture", src);
+        Fail(CS(MSG_READ_ERROR, "SaferCopy: read error"), src);
         ok = FALSE;
     }
 
@@ -583,19 +647,19 @@ static BOOL CopyFile(const char *src, const char *dst)
     {
         if (!G.quiet)
         {
-            OUT("  Verify  %s ...", dst);
+            OUT(CS(MSG_VERIFYING, "  Verify  %s ..."), dst);
             fflush(stdout);
         }
 
         if (!VerifyFiles(src, dst))
         {
-            if (!G.quiet) OUT(" ECHEC!\n");
-            Fail("SaferCopy: verification echouee - fichier supprime", dst);
+            if (!G.quiet) OUT(CS(MSG_VERIFY_FAIL, " FAILED!\n"));
+            Fail(CS(MSG_VERIFY_FAILED_DEL, "SaferCopy: verify failed - file deleted"), dst);
             xDel(dst);
             ok = FALSE;
             goto done;
         }
-        if (!G.quiet) OUT(" OK\n");
+        if (!G.quiet) OUT(CS(MSG_VERIFY_OK, " OK\n"));
     }
 
     /* --- DATES / CLONE --------------------------------------- */
@@ -606,7 +670,7 @@ static BOOL CopyFile(const char *src, const char *dst)
          * quand DATES est specifie sans CLONE.
          */
         if (!xDate(dst, &fib->fib_Date))
-            Fail("SaferCopy: avertissement SetFileDate echoue", dst);
+            Fail(CS(MSG_SETDATE_WARNING, "SaferCopy: warning - SetFileDate failed"), dst);
     }
     if (G.clone && !G.nopro)
         xProt(dst, fib->fib_Protection);
@@ -645,12 +709,12 @@ static BOOL VerifyFiles(const char *src, const char *dst)
 
         if (rSrc < 0 || rDst < 0)
         {
-            ERR("\nSaferCopy: verify - erreur de lecture\n");
+            ERR(CS(MSG_VERIFY_READ_ERR, "\nSaferCopy: verify - read error\n"));
             ok = FALSE; break;
         }
         if (rSrc != rDst)
         {
-            ERR("\nSaferCopy: verify - tailles differentes (%ld vs %ld)\n",
+            ERR(CS(MSG_VERIFY_SIZE_DIFF, "\nSaferCopy: verify - size mismatch (%ld vs %ld)\n"),
                 (long)rSrc, (long)rDst);
             ok = FALSE; break;
         }
@@ -658,7 +722,7 @@ static BOOL VerifyFiles(const char *src, const char *dst)
 
         if (memcmp(G.buf, G.vbuf, (size_t)rSrc) != 0)
         {
-            ERR("\nSaferCopy: verify - contenu different!\n");
+            ERR(CS(MSG_VERIFY_CONTENT, "\nSaferCopy: verify - content mismatch\n"));
             ok = FALSE; break;
         }
     }
@@ -808,11 +872,11 @@ static void PrintErrors(void)
 {
     if (g_errBufUsed == 0 && g_errTrunc == 0) return;
 
-    ERR("\n--- Recapitulatif : %ld erreur(s) ---\n", (long)G.nErrors);
+    ERR(CS(MSG_SUMMARY_HEADER, "\n--- Summary: %ld error(s) ---\n"), (long)G.nErrors);
     if (g_errBufUsed > 0)
         ERR("%s", g_errBuf);
     if (g_errTrunc > 0)
-        ERR("  [%ld message(s) tronques : buffer d erreurs plein]\n",
+        ERR(CS(MSG_ERRBUF_TRUNCATED, "  [%ld message(s) truncated - error buffer full]\n"),
             (long)g_errTrunc);
 }
 
@@ -878,7 +942,7 @@ static void CheckAbort(void)
         /* Ce message va dans le buffer, imprime avec les autres a la fin. */
         {
             char msg[128];
-            sprintf(msg, "SaferCopy: MAXERR=%ld atteint - abandon", (long)G.maxErr);
+            sprintf(msg, CS(MSG_ABORT, "SaferCopy: MAXERR=%ld reached - aborting"), (long)G.maxErr);
             Fail(msg, NULL);
         }
     }
@@ -893,6 +957,7 @@ static void Die(LONG code)
     }
     if (G.buf)  FreeVec(G.buf);
     if (G.vbuf) FreeVec(G.vbuf);
+    locale_close();
     fflush(stdout);
     fflush(stderr);
     exit(code);
