@@ -182,6 +182,7 @@ static BOOL  VerifyFiles(const char *src, const char *dst);
 static void  CopyDir    (const char *src, const char *dst);
 static BOOL  NeedsCopy  (const char *src, const char *dst);
 static BOOL  EnsureDir  (const char *path);
+static BOOL  EnsurePath (const char *path);
 static BOOL  IsDir      (const char *path, struct FileInfoBlock *fib_out);
 static void  JoinPath   (char *out, LONG outlen,
                          const char *dir, const char *leaf);
@@ -292,7 +293,7 @@ int main(void)
 
     if (fromList[0] && fromList[1] && !toIsDir)
     {
-        if (!EnsureDir(toPath))
+        if (!EnsurePath(toPath))
         {
             Fail("SaferCopy: impossible de creer le repertoire destination",
                  toPath);
@@ -326,7 +327,7 @@ int main(void)
                 strncpy(dst, toPath, (size_t)(MAXPATH - 1));
                 dst[MAXPATH - 1] = '\0';
             }
-            if (!EnsureDir(dst))
+            if (!EnsurePath(dst))
             {
                 Fail("SaferCopy: impossible de creer", dst);
                 G.nErrors++;
@@ -795,6 +796,54 @@ static void PrintErrors(void)
             (long)g_errTrunc);
 }
 
+
+static BOOL EnsurePath(const char *path)
+{
+    char buf[MAXPATH];
+    LONG i, len;
+
+    if (IsDir(path, NULL)) return TRUE;
+
+    strncpy(buf, path, MAXPATH - 1);
+    buf[MAXPATH - 1] = '\0';
+    len = (LONG)strlen(buf);
+
+    /* Retirer le slash final */
+    if (len > 0 && buf[len - 1] == '/')
+        buf[--len] = '\0';
+
+    for (i = 1; i <= len; i++)
+    {
+        if (buf[i] == '/' || i == len)
+        {
+            char save   = buf[i];
+            LONG endpos = (LONG)strlen(buf) - 1;
+            buf[i] = '\0';
+
+            /* Ne pas tenter de creer le volume lui-meme ("DH1:") */
+            if (endpos >= 0 && buf[endpos] != ':')
+            {
+                if (!IsDir(buf, NULL))
+                {
+                    BPTR l = CreateDir((STRPTR)buf);
+                    if (l) UnLock(l);
+                    else if (i == len)
+                    {
+                        buf[i] = save;
+                        return FALSE;   /* echec sur le composant final */
+                    }
+                    /* echec sur intermediaire = probablement deja existant,
+                     * on continue et on verra au composant suivant */
+                }
+            }
+            buf[i] = save;
+        }
+    }
+    return IsDir(path, NULL);
+}
+
+
+
 /*
  * CheckAbort : verifie si on a atteint MAXERR.
  * Si oui, logue un message final et arme G.abort.
@@ -824,5 +873,7 @@ static void Die(LONG code)
     }
     if (G.buf)  FreeVec(G.buf);
     if (G.vbuf) FreeVec(G.vbuf);
+    fflush(stdout);
+    fflush(stderr);
     exit(code);
 }
