@@ -14,30 +14,28 @@ BACKGROUND
 
   Copy 47.7 shipped with AmigaOS 3.2.3 silently ignores the VERIFY,
   DATES and BUF/BUFFER keywords documented in the AmigaDOS 3.2.3 manual.
-  On USB stacks (Poseidon) and FAT95, this causes random incomplete file
-  copies with no error reported - particularly destructive during large
-  backups involving millions of files.
+  It features error buffering. Errors gets printed both immediately AND
+  are summarised at the end. There's no need to watch the terminal for 
+  ages.
 
-FIXES vs COPY 47.7
+FIXES over COPY 47.7
 
   - BUF/BUFFER  : actually uses the specified buffer size (default 512KB).
-                  Critical for USB performance: reduces DOS calls from
-                  700/sec to ~1/sec for a 500MB file.
 
   - DATES       : actually calls SetFileDate() when specified alone,
                   without requiring CLONE.
 
   - VERIFY      : actually re-reads the destination after every write and
                   compares byte-for-byte with the source. Corrupted files
-                  are deleted immediately.
+                  are replaced immediately.
 
   - Partial write detection: checks Write() return value on every call.
-                  Silently truncated files (common on FAT95/Poseidon) are
-                  caught, logged, and the destination is deleted.
+                  Silently truncated files are caught, logged, and the
+                  destination is replaced.
 
   - Path handling: destination directories are created recursively
-                  (equivalent of mkdir -p). Assign paths like sys: are
-                  handled correctly without spurious slashes.
+                  (equivalent of mkdir -p).
+
 
 EXTRA FEATURES
 
@@ -50,14 +48,11 @@ EXTRA FEATURES
                   Useful when a previous backup was done without DATES/CLONE
                   and destination files have the wrong date.
 
-  VERBOSE       : show skipped (up-to-date) files. By default only active
+  VERBOSE       : shows skipped (up-to-date) files. By default only active
                   copies and errors are displayed.
 
   MAXERR/K/N    : abort after N errors. Useful for unattended large copies
                   over unreliable media. Default 0 = no limit.
-
-  Error buffering: errors print immediately AND are summarised at the end.
-                  No need to watch the terminal for hours.
 
   FORCE         : strips write-protection from destination before copying.
 
@@ -65,12 +60,14 @@ EXTRA FEATURES
                   18 languages. Falls back to English if locale.library is
                   absent or no catalog is found.
 
+
 TEMPLATE
 
   FROM/M,TO/A,ALL/S,QUIET/S,BUF=BUFFER/K/N,CLONE/S,DATES/S,
   NOPRO/S,VERIFY/S,NOREQ/S,UPDATE/S,FORCE/S,MAXERR/K/N,NDATE/S,VERBOSE/S
 
-  Type "SaferCopy ?" for an interactive argument prompt (AmigaDOS standard).
+  Type "SaferCopy ?" for an interactive argument prompt.
+
 
 EXAMPLES
 
@@ -88,9 +85,9 @@ EXAMPLES
 
 LANGUAGES
 
-  Catalogs included for: english, francais, deutsch, espanol, nederlands,
-  dansk, norsk, polski, czech, slovensko, portugues, catala, euskara,
-  turkce, srpski, russian, greek, roman.
+  Catalogs are included for: english, francais, deutsch, espanol, nederlands,
+  dansk, norsk, polski, czech, slovensko, portugues, catala, euskara, turkce, 
+  srpski, russian, greek, roman.
 
   Install: copy <lang>/SaferCopy.catalog to LOCALE:Catalogs/<lang>/
 
