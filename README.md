@@ -8,7 +8,7 @@ Architecture: m68k-amigaos
 
 ---
 
-SaferCopy 1.1 - A reliable replacement for AmigaDOS Copy 47.7
+SaferCopy 1.2 - A reliable replacement for AmigaDOS Copy 47.7
 
 BACKGROUND
 
@@ -17,6 +17,11 @@ BACKGROUND
   It features error buffering. Errors gets printed both immediately AND
   are summarised at the end. There's no need to watch the terminal for 
   ages.
+
+  TESTED on Amiga 4000, 3000T, WinUAE, over a tremendous amount of files.
+  It works for me, but I can't garantee it won't burn down your house to 
+  the ground so please make a copy of it first... Uhh wait.. :D
+
 
 FIXES over COPY 47.7
 
@@ -85,6 +90,8 @@ EXAMPLES
 
 LANGUAGES
 
+  The catalogs are LLM translated. Please report in case of impediments...
+	
   Catalogs are included for: english, francais, deutsch, espanol, nederlands,
   dansk, norsk, polski, czech, slovensko, portugues, catala, euskara, turkce, 
   srpski, russian, greek, roman.
@@ -98,9 +105,9 @@ COMPILATION
 
   Catalogs: python3 catalogs/build_catalog.py  (requires Python 3, no catcomp needed)
 
-SOURCE
+SOURCES
 
-  Included in the archive.
+  Available on GitHub, https://github.com/Nowomeister/safercopy/
 
 TODO:
 
