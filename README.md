@@ -1,4 +1,4 @@
-Short: Reliable file copy VERIFY/UPDATE§/BUFFER bugs 
+Short: Reliable file copy VERIFY/UPDATE§/BUFFER
 Author: Nowee (with Claude)
 Uploader: Nowee
 Type: util/shell
