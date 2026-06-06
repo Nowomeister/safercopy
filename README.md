@@ -1,14 +1,16 @@
-Short: Reliable file copy VERIFY/UPDATE§/BUFFER
-Author: Nowee (with Claude)
-Uploader: Nowee
-Type: util/shell
-Version: 1.2
+Short: Reliable file copy VERIFY/UPDATE/BUFFER 
+Author: nowee@beamreactor.com
+Uploader: nowee@beamreactor.com
+Type: util/cli
+Version: 1.2 
+date: 2026.06.06
 Requires: AmigaOS 2.04+ (V37), 68000+
-Architecture: m68k-amigaos
+Architecture: m68k-amigaos   
 
 ---
 
 SaferCopy 1.2 - A reliable replacement for AmigaDOS Copy 47.7
+
 
 BACKGROUND
 
@@ -72,7 +74,7 @@ The catalogs are LLM translated. Please report in case of impediments...
 
 Catalogs are included for: english, francais, deutsch, espanol, nederlands, dansk, norsk, polski, czech, slovensko, portugues, catala, euskara, turkce, srpski, russian, greek, roman.
 
-Install: copy /SaferCopy.catalog to LOCALE:Catalogs//
+Install: copy catalogs/$LANGUAGE/SaferCopy.catalog to LOCALE:Catalogs/$LANGUAGE/SaferCopy.catalog
 
 
 COMPILATION
@@ -94,9 +96,9 @@ Test on OS 2.04, 3.0, 3.1.
 
 HISTORY
 
-1.2.1 - Updated the readme. Performed more tests including with illegal filenames (FAT).
-
 1.2 - Added locale catalog support (18 languages), $VER string, minimum OS version check (V37 / AmigaOS 2.04+).
+	  Updated the readme. Performed more tests including with files bearing illegal names (ExFAT).
+	  Checked for consistency with Claude, Gemini. Translations by Claude.
 
 1.1 - Added NDATE, VERBOSE, recursive mkdir, fixed sys: path handling, fixed Shell window not closing after exit.
 
