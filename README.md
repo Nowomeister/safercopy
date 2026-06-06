@@ -1,6 +1,6 @@
 Short: Reliable file copy VERIFY/UPDATE/BUFFER 
-Author: nowee@beamreactor.com
-Uploader: nowee@beamreactor.com
+Author: nowee
+Uploader: nowee
 Type: util/cli
 Version: 1.2 
 date: 2026.06.06
