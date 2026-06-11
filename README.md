@@ -79,9 +79,19 @@ Install: copy catalogs/$LANGUAGE/SaferCopy.catalog to LOCALE:Catalogs/$LANGUAGE/
 
 COMPILATION
 
-GCC : m68k-amigaos-gcc -O2 -m68000 -noixemul -Wall -o SaferCopy SaferCopy.c SASC: sc SaferCopy.c LINK MATH=SOFT NOSTKCHK OPT IDIR=Include: IDIR=NDK3.2:Include
-
-Catalogs: python3 catalogs/build_catalog.py (requires Python 3, no catcomp needed)
+ * Compilation SAS/C 6.x :
+ *   sc SaferCopy.c LINK RESIDENT MATH=SOFT NOSTKCHK OPT STRMERGE
+ *      IDIR=Include: IDIR=NDK3.2:Include
+ *   RESIDENT : code reentrant (data via A4, startup cres.o) ->
+ *   binaire pur, utilisable avec la commande RESIDENT du Shell.
+ *
+ * Compilation GCC cross (m68k-amigaos-gcc 6.x) :
+ *   m68k-amigaos-gcc -O2 -m68000 -noixemul -resident -Wall
+ *      -o SaferCopy SaferCopy.c
+ *   -resident : data base-relative copiee a chaque invocation ->
+ *   binaire pur (residentable). Les ~26 Ko de statiques (g_errBuf,
+ *   G, bases de librairies) sont dupliques par instance, jamais
+ *   partages.
 
 
 SOURCES
