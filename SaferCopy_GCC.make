@@ -11,11 +11,14 @@ SRC    = SaferCopy.c
 # -fomit-frame-pointer : code plus compact
 # -m68000      : compatible avec tout 680x0
 # -noixemul    : utilise libnix (pas ixemul) = binaire autonome
-CFLAGS = -O2 -fomit-frame-pointer -m68000 -noixemul \
+# -resident    : binaire pur (residentable) : la section data est
+#                copiee a chaque invocation et adressee via A4.
+#                Necessaire pour la commande RESIDENT du Shell.
+CFLAGS = -O2 -fomit-frame-pointer -m68000 -noixemul -resident \
          -Wall -Wextra \
          -Wno-pointer-sign
 
-LDFLAGS = -noixemul
+LDFLAGS = -noixemul -resident
 
 all: $(TARGET)
 

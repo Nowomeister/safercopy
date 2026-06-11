@@ -42,5 +42,9 @@
 #define MSG_FINAL_REPORT       32
 #define MSG_ABORT_TAG          33
 #define MSG_ABORT              34
+#define MSG_CHECK_MISSING      35
+#define MSG_CHECK_OK           36
+#define MSG_CHECK_MISMATCH     37
+#define MSG_OPT_CHECK          38
 
 #endif /* SAFERCOPY_CAT_H */

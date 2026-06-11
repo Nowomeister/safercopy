@@ -9,7 +9,7 @@
 ;            and their order in every translation.
 
 MSG_STARTUP (0///)
-SaferCopy: buffer %lu KB%s%s%s%s
+SaferCopy: buffer %lu KB%s%s%s%s%s
 
 MSG_OPT_VERIFY (1///)
 , VERIFY
@@ -112,3 +112,15 @@ MSG_ABORT_TAG (33///)
 
 MSG_ABORT (34///)
 SaferCopy: MAXERR=%ld reached - aborting
+
+MSG_CHECK_MISSING (35///)
+  Missing  %s
+
+MSG_CHECK_OK (36///)
+  OK       %s
+
+MSG_CHECK_MISMATCH (37///)
+  SizeDiff %s  (src=%ld  dst=%ld)
+
+MSG_OPT_CHECK (38///)
+, CHECK

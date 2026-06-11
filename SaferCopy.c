@@ -18,11 +18,18 @@
  *   FORCE  : copie meme si dest est protege en ecriture
  *
  * Compilation SAS/C 6.x :
- *   sc SaferCopy.c LINK MATH=SOFT NOSTKCHK OPT STRMERGE
+ *   sc SaferCopy.c LINK RESIDENT MATH=SOFT NOSTKCHK OPT STRMERGE
  *      IDIR=Include: IDIR=NDK3.2:Include
+ *   RESIDENT : code reentrant (data via A4, startup cres.o) ->
+ *   binaire pur, utilisable avec la commande RESIDENT du Shell.
  *
  * Compilation GCC cross (m68k-amigaos-gcc 6.x) :
- *   m68k-amigaos-gcc -O2 -m68000 -noixemul -Wall -o SaferCopy SaferCopy.c
+ *   m68k-amigaos-gcc -O2 -m68000 -noixemul -resident -Wall
+ *      -o SaferCopy SaferCopy.c
+ *   -resident : data base-relative copiee a chaque invocation ->
+ *   binaire pur (residentable). Les ~26 Ko de statiques (g_errBuf,
+ *   G, bases de librairies) sont dupliques par instance, jamais
+ *   partages.
  *
  * Notes de portabilite :
  *   - printf/fprintf/sprintf (stdio libnix) a la place des macros
@@ -41,10 +48,10 @@
 
 /* --- Version ----------------------------------------------------- */
 /*
- * $VER: SaferCopy 1.2 (2026.06.05) Nowee with Claude
+ * $VER: SaferCopy 1.4 (2026.06.11) Nowee with Claude
  * Parsed by Version, VersionWB, and the Aminet indexer.
  */
-const char * const version = "$VER: SaferCopy 1.2 (2026.06.05) Nowee with Claude";
+const char * const version = "$VER: SaferCopy 1.4 (2026.06.11) Nowee with Claude";
 
 /* --- Includes ---------------------------------------------------- */
 #include <proto/dos.h>
@@ -81,7 +88,7 @@ const char * const version = "$VER: SaferCopy 1.2 (2026.06.05) Nowee with Claude
 #define TEMPLATE \
     "FROM/M,TO/A,ALL/S,QUIET/S,BUF=BUFFER/K/N," \
     "CLONE/S,DATES/S,NOPRO/S,VERIFY/S,NOREQ/S,UPDATE/S,FORCE/S," \
-    "MAXERR/K/N,NDATE/S,VERBOSE/S"
+    "MAXERR/K/N,NDATE/S,VERBOSE/S,CHECK/S"
 
 enum {
     A_FROM=0, A_TO, A_ALL, A_QUIET, A_BUF,
@@ -89,6 +96,7 @@ enum {
     A_MAXERR,
     A_NDATE,
     A_VERBOSE,
+    A_CHECK,
     A_COUNT
 };
 
@@ -177,6 +185,7 @@ static struct {
     BOOL    force;      /* virer la protection dest si necessaire   */
     BOOL    ndate;      /* UPDATE compare taille seulement (pas date) */
     BOOL    verbose;    /* afficher les fichiers ignores (UPDATE a jour) */
+    BOOL    check;      /* CHECK : audit taille seulement, pas de copie  */
     LONG    nCopied;
     LONG    nSkipped;
     LONG    nErrors;
@@ -184,6 +193,12 @@ static struct {
     BOOL    abort;      /* mis a 1 quand maxErr est depasse          */
     LONG    retCode;
     APTR    oldWinPtr;  /* pr_WindowPtr original pour NOREQ         */
+    BOOL    noreqSet;   /* TRUE si on a modifie pr_WindowPtr.
+                           NE PAS tester oldWinPtr != NULL : pour un
+                           CLI la valeur originale EST NULL, et les
+                           commandes tournent sur le processus du
+                           Shell -> sans restauration le Shell garde
+                           pr_WindowPtr = -1 (plus aucun requester). */
 } G;
 
 /* --------------------------------------------------------------*/
@@ -227,6 +242,7 @@ static INLINE BOOL xAddPart(char *o, const char *l, ULONG n)
 static BOOL  CopyFile   (const char *src, const char *dst);
 static BOOL  VerifyFiles(const char *src, const char *dst);
 static void  CopyDir    (const char *src, const char *dst);
+static void  EscapeAmigaPattern(char *out, ULONG outlen, const char *in);
 static BOOL  NeedsCopy  (const char *src, const char *dst);
 static BOOL  EnsureDir  (const char *path);
 static BOOL  EnsurePath (const char *path);
@@ -297,6 +313,7 @@ int main(void)
     G.force  = (BOOL) args[A_FORCE];
     G.ndate   = (BOOL) args[A_NDATE];
     G.verbose = (BOOL) args[A_VERBOSE];
+    G.check   = (BOOL) args[A_CHECK];
 
     /*
      * MAXERR : 0 = pas de limite (defaut).
@@ -322,6 +339,7 @@ int main(void)
     {
         struct Process *me = (struct Process *)FindTask(NULL);
         G.oldWinPtr      = me->pr_WindowPtr;
+        G.noreqSet       = TRUE;
         me->pr_WindowPtr = (APTR)-1L;
     }
 
@@ -341,12 +359,13 @@ int main(void)
     }
 
     if (!G.quiet) {
-        OUT("SaferCopy: buffer %lu KB%s%s%s%s",
+        OUT("SaferCopy: buffer %lu KB%s%s%s%s%s",
             (unsigned long)(G.bufSize / 1024),
             G.verify  ? CS(MSG_OPT_VERIFY,  ", VERIFY")  : "",
             G.dates   ? CS(MSG_OPT_DATES,   ", DATES")   : "",
             G.update  ? CS(MSG_OPT_UPDATE,  ", UPDATE")  : "",
-            G.verbose ? CS(MSG_OPT_VERBOSE, ", VERBOSE") : "");
+            G.verbose ? CS(MSG_OPT_VERBOSE, ", VERBOSE") : "",
+            G.check   ? CS(MSG_OPT_CHECK,   ", CHECK")   : "");
         if (G.maxErr > 0)
             OUT(CS(MSG_OPT_MAXERR, ", MAXERR=%ld"), (long)G.maxErr);
         OUT("\n");
@@ -441,68 +460,200 @@ int main(void)
 }
 
 /* --------------------------------------------------------------*/
+/*  EscapeAmigaPattern                                                  */
+/*                                                                      */
+/*  Echappe les caracteres speciaux AmigaDOS ParsePattern dans un       */
+/*  chemin afin qu il soit interprete litteralement par MatchFirst.     */
+/*                                                                      */
+/*  Caracteres speciaux (prefixes par apostrophe) :                     */
+/*    # ? ( ) | ~ [ ] % ' &                                             */
+/*  Separateurs de chemin non echappes : / :                            */
+/*                                                                      */
+/*  Exemple :                                                           */
+/*    "Games/Quick&Silva"  ->  "Games/Quick'&Silva"                     */
+/*    "Work:foo(bar)"      ->  "Work:foo'(bar')"                        */
+/* --------------------------------------------------------------*/
+
+static void EscapeAmigaPattern(char *out, ULONG outlen, const char *in)
+{
+    /* Tous les metacaracteres ParsePattern sauf / et : (separateurs). */
+    static const char specials[] = "#?()|~[]%'&";
+    ULONG o = 0;
+    const char *p;
+    const char *s;
+
+    for (p = in; *p && o + 2 < outlen; p++)
+    {
+        for (s = specials; *s; s++)
+        {
+            if (*p == *s)
+            {
+                out[o++] = '\'';   /* echappement AmigaDOS */
+                break;
+            }
+        }
+        if (o < outlen - 1)
+            out[o++] = *p;
+    }
+    out[o] = '\0';
+}
+
+/* --------------------------------------------------------------*/
 /*  CopyDir                                                             */
 /* --------------------------------------------------------------*/
+
+/*
+ * Buffers de travail de CopyDir.
+ *
+ * CRITIQUE : CopyDir est recursive. Mettre ces buffers (~2 Ko) sur la
+ * PILE a chaque niveau faisait deborder la pile sur les arbres profonds.
+ * Sur 68k il n y a PAS de page de garde MMU : un debordement de pile
+ * n envoie pas un Guru propre, il ecrase silencieusement les structures
+ * d exec (liste des taches, etc.) -> lockup TOTAL, reset obligatoire.
+ *
+ * On alloue donc AnchorPath + buffers en un seul bloc sur le TAS.
+ * La pile ne porte plus que des pointeurs (~100 octets / niveau) :
+ * 32 Ko de pile encaissent maintenant 100+ niveaux de profondeur.
+ *
+ * Disposition du bloc :
+ *   [ AnchorPath ][ MAXPATH : espace ap_Buf ][ DirBufs ]
+ * L espace MAXPATH doit suivre immediatement AnchorPath car MatchFirst
+ * y ecrit le chemin resolu (ap_Strlen octets).
+ */
+struct DirBufs {
+    char pat[MAXPATH * 2 + 8];   /* x2 : pire cas echappement      */
+    char subdst[MAXPATH];        /* passe 1 : sous-repertoire dest  */
+    char dstfile[MAXPATH];       /* passe 2 : fichier dest          */
+};
 
 static void CopyDir(const char *src, const char *dst)
 {
     struct AnchorPath *ap;
-    char               pat[MAXPATH + 8];
+    struct DirBufs    *db;
+    UBYTE             *blk;
     LONG               rc;
 
-    ap = (struct AnchorPath *)
-         AllocVec(sizeof(struct AnchorPath) + MAXPATH,
-                  MEMF_CLEAR | MEMF_ANY);
-    if (!ap)
+    blk = (UBYTE *)AllocVec(sizeof(struct AnchorPath) + MAXPATH
+                            + sizeof(struct DirBufs),
+                            MEMF_CLEAR | MEMF_ANY);
+    if (!blk)
     {
         ERR(CS(MSG_NO_ANCHORPATH, "SaferCopy: out of memory (AnchorPath)\n"));
         G.nErrors++;
         return;
     }
+    ap = (struct AnchorPath *)blk;
+    db = (struct DirBufs *)(blk + sizeof(struct AnchorPath) + MAXPATH);
     ap->ap_Strlen = MAXPATH;
 
     /*
-     * Construire le pattern avec AddPart plutot que sprintf.
-     * sprintf("%s/#?", "sys:") donnait "sys:/#?" (slash parasite).
-     * AddPart("sys:", "#?") donne "sys:#?" (correct).
-     * AddPart("sys:Internet", "#?") donne "sys:Internet/#?" (correct).
+     * Construire le pattern avec EscapeAmigaPattern + AddPart.
+     *
+     * PROBLEME : les noms de repertoires peuvent contenir des caracteres
+     * speciaux pour ParsePattern (ex: & | ~ # ? ( ) [ ] ' %).
+     * Exemple : "TheAdventuresOfQuick&Silva" -> ParsePattern interprete
+     * '&' comme un operateur ET -> lockup garanti.
+     *
+     * SOLUTION : echapper chaque caractere special avec une apostrophe
+     * avant d y ajouter le pattern /#? .
+     *
+     * Les separateurs / et : ne sont PAS echappes (ce sont des chemins).
      */
-    strncpy(pat, src, MAXPATH - 1);
-    pat[MAXPATH - 1] = '\0';
-    xAddPart(pat, "#?", (ULONG)sizeof(pat));
+    EscapeAmigaPattern(db->pat, (ULONG)sizeof(db->pat) - 4, src);
+    xAddPart(db->pat, "#?", (ULONG)sizeof(db->pat));
 
     /* Passe 1 : sous-repertoires (recurse en premier) */
-    rc = MatchFirst((STRPTR)pat, ap);
+    rc = MatchFirst((STRPTR)db->pat, ap);
     while (rc == 0 && !G.abort)
     {
         if (ap->ap_Info.fib_DirEntryType > 0)
         {
-            char subdst[MAXPATH];
-            JoinPath(subdst, MAXPATH, dst, ap->ap_Info.fib_FileName);
-            if (!EnsureDir(subdst))
+            JoinPath(db->subdst, MAXPATH, dst, ap->ap_Info.fib_FileName);
+            if (G.check)
             {
-                Fail(CS(MSG_NO_MKDIR, "SaferCopy: cannot create"), subdst);
+                /* Mode CHECK : ne pas creer le repertoire.
+                 * On recurse quand meme : les fichiers manquants seront
+                 * signales par le bloc CHECK de la passe 2. */
+                CopyDir((const char *)ap->ap_Buf, db->subdst);
+            }
+            else if (!EnsureDir(db->subdst))
+            {
+                Fail(CS(MSG_NO_MKDIR, "SaferCopy: cannot create"), db->subdst);
                 G.nErrors++;
                 CheckAbort();
             }
             else
             {
-                CopyDir((const char *)ap->ap_Buf, subdst);
+                CopyDir((const char *)ap->ap_Buf, db->subdst);
             }
         }
         rc = MatchNext(ap);
     }
     MatchEnd(ap);
 
+    /*
+     * Reinitialiser l AnchorPath avant le second MatchFirst.
+     * L autodoc dos.library exige une structure mise a zero ;
+     * reutiliser l etat laisse par MatchEnd est indefini (AChain
+     * residuels -> fuite memoire progressive, scan corrompu).
+     * On efface aussi la zone ap_Buf (MAXPATH octets apres la
+     * structure) ; db->pat, situe au-dela, n est pas touche.
+     */
+    memset(ap, 0, sizeof(struct AnchorPath) + MAXPATH);
+    ap->ap_Strlen = MAXPATH;
+
     /* Passe 2 : fichiers */
-    rc = MatchFirst((STRPTR)pat, ap);
+    rc = MatchFirst((STRPTR)db->pat, ap);
     while (rc == 0 && !G.abort)
     {
         if (ap->ap_Info.fib_DirEntryType < 0)
         {
-            char dstfile[MAXPATH];
-            JoinPath(dstfile, MAXPATH, dst, ap->ap_Info.fib_FileName);
-            if (!CopyFile((const char *)ap->ap_Buf, dstfile))
+            JoinPath(db->dstfile, MAXPATH, dst, ap->ap_Info.fib_FileName);
+
+            if (G.check)
+            {
+                /* CHECK inline : MatchFirst a deja fourni fib_Size de la
+                 * source -> zero re-lock source, un seul Lock destination.
+                 * Evite de doubler les packets DOS/Poseidon par fichier. */
+                BPTR dl = xLock(db->dstfile, ACCESS_READ);
+                if (!dl)
+                {
+                    OUT(CS(MSG_CHECK_MISSING, "  Missing  %s\n"),
+                        (char *)ap->ap_Buf);
+                    G.nErrors++;
+                    G.retCode = RETURN_WARN;
+                    CheckAbort();
+                }
+                else
+                {
+                    struct FileInfoBlock *df =
+                        (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+                    if (df && Examine(dl, df))
+                    {
+                        if (df->fib_Size == ap->ap_Info.fib_Size)
+                        {
+                            if (G.verbose)
+                                OUT(CS(MSG_CHECK_OK, "  OK       %s\n"),
+                                    (char *)ap->ap_Buf);
+                            G.nSkipped++;
+                        }
+                        else
+                        {
+                            OUT(CS(MSG_CHECK_MISMATCH,
+                                   "  SizeDiff %s  (src=%ld  dst=%ld)\n"),
+                                (char *)ap->ap_Buf,
+                                (long)ap->ap_Info.fib_Size,
+                                (long)df->fib_Size);
+                            G.nErrors++;
+                            G.retCode = RETURN_WARN;
+                            CheckAbort();
+                        }
+                    }
+                    if (df) FreeDosObject(DOS_FIB, df);
+                    UnLock(dl);
+                }
+            }
+            else if (!CopyFile((const char *)ap->ap_Buf, db->dstfile))
             {
                 G.nErrors++;
                 G.retCode = RETURN_WARN;
@@ -513,7 +664,7 @@ static void CopyDir(const char *src, const char *dst)
     }
     MatchEnd(ap);
 
-    FreeVec(ap);
+    FreeVec(blk);
 }
 
 /* --------------------------------------------------------------*/
@@ -551,6 +702,44 @@ static BOOL CopyFile(const char *src, const char *dst)
         return FALSE;
     }
     UnLock(lock);
+
+    /* --- CHECK : audit par taille uniquement, pas de copie ---- */
+    if (G.check)
+    {
+        BPTR              dl = xLock(dst, ACCESS_READ);
+        struct FileInfoBlock *df;
+        BOOL              ok = FALSE;
+
+        if (!dl)
+        {
+            OUT(CS(MSG_CHECK_MISSING, "  Missing  %s\n"), src);
+            G.nErrors++;
+            FreeDosObject(DOS_FIB, fib);
+            return FALSE;
+        }
+        df = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+        if (df && Examine(dl, df))
+        {
+            if (df->fib_Size == fib->fib_Size)
+            {
+                if (G.verbose)
+                    OUT(CS(MSG_CHECK_OK, "  OK       %s\n"), src);
+                G.nSkipped++;
+                ok = TRUE;
+            }
+            else
+            {
+                OUT(CS(MSG_CHECK_MISMATCH,
+                       "  SizeDiff %s  (src=%ld  dst=%ld)\n"),
+                    src, (long)fib->fib_Size, (long)df->fib_Size);
+                G.nErrors++;
+            }
+        }
+        if (df) FreeDosObject(DOS_FIB, df);
+        UnLock(dl);
+        FreeDosObject(DOS_FIB, fib);
+        return ok;
+    }
 
     /* --- UPDATE : faut-il copier ? ---------------------------- */
     if (G.update && !NeedsCopy(src, dst))
@@ -823,26 +1012,51 @@ static void JoinPath(char *out, LONG outlen,
 }
 
 /*
+ * StrAppend : concatenation bornee (sc.lib et libnix C89 n ont pas
+ * de snprintf). Tronque silencieusement si dst est plein.
+ */
+static void StrAppend(char *dst, ULONG dstlen, const char *src)
+{
+    ULONG used = (ULONG)strlen(dst);
+    ULONG n;
+
+    if (used + 1 >= dstlen) return;
+    n = (ULONG)strlen(src);
+    if (n > dstlen - 1 - used) n = dstlen - 1 - used;
+    memcpy(dst + used, src, (size_t)n);
+    dst[used + n] = '\0';
+}
+
+/*
  * Fail : construit le message d'erreur et l'ajoute au buffer.
- * N'affiche RIEN immediatement : les messages arrivent en bloc
- * a la fin via PrintErrors().
+ *
+ * CRITIQUE : arg est un chemin pouvant faire MAXPATH octets et msg
+ * une chaine de catalogue de longueur arbitraire. L ancien
+ * sprintf("%s: %s") dans line[384] debordait sur la PILE des qu un
+ * chemin en erreur depassait ~350 caracteres -> ecrasement silencieux
+ * au point le plus profond de la recursion (NOSTKCHK, pas de MMU)
+ * -> lockup differe. D ou : concatenation bornee, et buffers en
+ * static (Fail n est jamais reentrant, le programme est mono-tache).
  */
 static void Fail(const char *msg, const char *arg)
 {
-    char line[384];
-    char fault[96];
+    static char line[MAXPATH + 192];
+    static char fault[96];
     LONG err = IoErr();
     int  used, avail;
 
+    line[0] = '\0';
+    StrAppend(line, (ULONG)sizeof(line), msg);
     if (arg)
-        sprintf(line, "%s: %s", msg, arg);
-    else
-        sprintf(line, "%s", msg);
+    {
+        StrAppend(line, (ULONG)sizeof(line), ": ");
+        StrAppend(line, (ULONG)sizeof(line), arg);
+    }
 
     if (err && Fault(err, NULL, (STRPTR)fault, (LONG)sizeof(fault))) {
-        LONG cur = (LONG)strlen(line);
-        /* sprintf sur line+cur, en s'assurant de ne pas deborder */
-        sprintf(line + cur, " (%s)", fault);
+        StrAppend(line, (ULONG)sizeof(line), " (");
+        StrAppend(line, (ULONG)sizeof(line), fault);
+        StrAppend(line, (ULONG)sizeof(line), ")");
     }
 
     /* Affichage immediat : l'utilisateur voit l'erreur en temps reel */
@@ -939,9 +1153,11 @@ static void CheckAbort(void)
     {
         G.abort   = TRUE;
         G.retCode = RETURN_ERROR;
-        /* Ce message va dans le buffer, imprime avec les autres a la fin. */
+        /* Ce message va dans le buffer, imprime avec les autres a la fin.
+         * static + 192 octets : pas sur la pile (on peut etre au plus
+         * profond de la recursion), marge pour les formats traduits. */
         {
-            char msg[128];
+            static char msg[192];
             sprintf(msg, CS(MSG_ABORT, "SaferCopy: MAXERR=%ld reached - aborting"), (long)G.maxErr);
             Fail(msg, NULL);
         }
@@ -950,7 +1166,7 @@ static void CheckAbort(void)
 
 static void Die(LONG code)
 {
-    if (G.oldWinPtr)
+    if (G.noreqSet)
     {
         struct Process *me = (struct Process *)FindTask(NULL);
         me->pr_WindowPtr = G.oldWinPtr;
