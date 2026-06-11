@@ -1,0 +1,84 @@
+; SaferCopy.ct -- Italiano
+; $VER: SaferCopy.ct 1.3 (2026)
+## version 1
+## language italiano
+## codeset 0
+
+MSG_STARTUP
+SaferCopy: buffer %lu KB%s%s%s%s%s
+MSG_OPT_VERIFY
+, VERIFY
+MSG_OPT_DATES
+, DATES
+MSG_OPT_UPDATE
+, UPDATE
+MSG_OPT_VERBOSE
+, VERBOSE
+MSG_OPT_MAXERR
+, MAXERR=%ld
+MSG_COPYING
+Copia   %s -> %s
+MSG_IGNORED
+  Salta   %s (aggiornato)
+MSG_DEST_INCOMPLETE
+  [dest incompleta: %ld/%ld byte]
+MSG_VERIFYING
+  Verify  %s ...
+MSG_VERIFY_OK
+ OK
+MSG_VERIFY_FAIL
+ FALLITO!
+MSG_FROM_REQUIRED
+SaferCopy: FROM e' obbligatorio
+MSG_NO_MEM_BUF
+SaferCopy: impossibile allocare %lu byte per il buffer
+MSG_NO_MKDIR_DEST
+SaferCopy: impossibile creare la cartella di destinazione
+MSG_NO_MKDIR
+SaferCopy: impossibile creare
+MSG_IS_DIR_USE_ALL
+SaferCopy: '%s' e' una cartella - usare ALL
+MSG_NO_ANCHORPATH
+SaferCopy: memoria insufficiente (AnchorPath)
+MSG_SRC_INACCESSIBLE
+SaferCopy: sorgente non accessibile
+MSG_CANNOT_OPEN
+SaferCopy: impossibile aprire
+MSG_CANNOT_CREATE
+SaferCopy: impossibile creare
+MSG_WRITE_INCOMPLETE
+SaferCopy: SCRITTURA INCOMPLETA %s (richiesti %ld, scritti %ld) - file eliminato!
+MSG_READ_ERROR
+SaferCopy: errore di lettura
+MSG_ALLOC_DOS_FAILED
+SaferCopy: AllocDosObject fallita
+MSG_EXAMINE_FAILED
+SaferCopy: Examine fallita
+MSG_VERIFY_FAILED_DEL
+SaferCopy: verifica fallita - file eliminato
+MSG_SETDATE_WARNING
+SaferCopy: attenzione - SetFileDate fallita
+MSG_VERIFY_READ_ERR
+SaferCopy: verify - errore di lettura
+MSG_VERIFY_SIZE_DIFF
+SaferCopy: verify - dimensioni diverse (%ld vs %ld)
+MSG_VERIFY_CONTENT
+SaferCopy: verify - contenuto diverso
+MSG_SUMMARY_HEADER
+--- Riepilogo: %ld errore(i) ---
+MSG_ERRBUF_TRUNCATED
+  [%ld messaggio(i) troncato(i) - buffer errori pieno]
+MSG_FINAL_REPORT
+SaferCopy: %ld copiati  %ld saltati  %ld errore(i)%s
+MSG_ABORT_TAG
+  [INTERROTTO: MAXERR raggiunto]
+MSG_ABORT
+SaferCopy: MAXERR=%ld raggiunto - interruzione
+MSG_CHECK_MISSING
+  Assente  %s
+MSG_CHECK_OK
+  OK       %s
+MSG_CHECK_MISMATCH
+  DimDiff  %s  (sorg=%ld  dest=%ld)
+MSG_OPT_CHECK
+, CHECK

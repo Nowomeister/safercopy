@@ -1,5 +1,5 @@
 ; SaferCopy.ct -- Greek (transliterated for AmigaOS Latin-1 display)
-; $VER: SaferCopy.ct 1.0 (2025)
+; $VER: SaferCopy.ct 1.3 (2026)
 ; NOTE: Use codeset 6 (ISO-8859-7) for native Greek display.
 ;       This version uses Latin transliteration for compatibility.
 ## version 1
@@ -7,7 +7,7 @@
 ## codeset 0
 
 MSG_STARTUP
-SaferCopy: buffer %lu KB%s%s%s%s
+SaferCopy: buffer %lu KB%s%s%s%s%s
 MSG_OPT_VERIFY
 , EPILOGI
 MSG_OPT_DATES
@@ -76,3 +76,11 @@ MSG_ABORT_TAG
   [AKIRO: MAXERR efthase]
 MSG_ABORT
 SaferCopy: MAXERR=%ld efthase - akiro
+MSG_CHECK_MISSING
+  Leipei   %s
+MSG_CHECK_OK
+  ENTAXEI  %s
+MSG_CHECK_MISMATCH
+  DiafMeg  %s  (src=%ld  dst=%ld)
+MSG_OPT_CHECK
+, ELEGCHOS

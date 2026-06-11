@@ -1,11 +1,11 @@
 ; SaferCopy.ct -- Euskara (Basque)
-; $VER: SaferCopy.ct 1.0 (2025)
+; $VER: SaferCopy.ct 1.3 (2026)
 ## version 1
 ## language euskara
 ## codeset 0
 
 MSG_STARTUP
-SaferCopy: buffer %lu KB%s%s%s%s
+SaferCopy: buffer %lu KB%s%s%s%s%s
 MSG_OPT_VERIFY
 , VERIFY
 MSG_OPT_DATES
@@ -74,3 +74,11 @@ MSG_ABORT_TAG
   [BERTAN BEHERA: MAXERR lortua]
 MSG_ABORT
 SaferCopy: MAXERR=%ld lortua - bertan behera
+MSG_CHECK_MISSING
+  Falta     %s
+MSG_CHECK_OK
+  ADOS      %s
+MSG_CHECK_MISMATCH
+  NeurriDif %s  (src=%ld  dst=%ld)
+MSG_OPT_CHECK
+, CHECK
