@@ -9,6 +9,12 @@ Architecture: m68k-amigaos\
 
 SaferCopy 1.4 - A reliable replacement for AmigaDOS Copy 47.7
 
+
+
+![A successful copy](/images/safercopy.png)
+
+
+
 BACKGROUND
 
 Copy 47.7 shipped with AmigaOS 3.2.3 silently ignores the VERIFY, DATES
