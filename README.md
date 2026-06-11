@@ -80,18 +80,10 @@ Install: copy catalogs/$LANGUAGE/SaferCopy.catalog to LOCALE:Catalogs/$LANGUAGE/
 COMPILATION
 
  * Compilation SAS/C 6.x :
- *   sc SaferCopy.c LINK RESIDENT MATH=SOFT NOSTKCHK OPT STRMERGE
- *      IDIR=Include: IDIR=NDK3.2:Include
- *   RESIDENT : code reentrant (data via A4, startup cres.o) ->
- *   binaire pur, utilisable avec la commande RESIDENT du Shell.
- *
+    sc SaferCopy.c LINK RESIDENT MATH=SOFT NOSTKCHK OPT STRMERGEIDIR=Include: IDIR=NDK3.2:Include
+
  * Compilation GCC cross (m68k-amigaos-gcc 6.x) :
- *   m68k-amigaos-gcc -O2 -m68000 -noixemul -resident -Wall
- *      -o SaferCopy SaferCopy.c
- *   -resident : data base-relative copiee a chaque invocation ->
- *   binaire pur (residentable). Les ~26 Ko de statiques (g_errBuf,
- *   G, bases de librairies) sont dupliques par instance, jamais
- *   partages.
+    m68k-amigaos-gcc -O2 -m68000 -noixemul -resident -Wall -o SaferCopy SaferCopy.c
 
 
 SOURCES
