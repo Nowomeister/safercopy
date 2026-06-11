@@ -39,26 +39,26 @@ It comes with no garantee whatsoever.
 USAGE:
 *** Please use stack 32768 ***
 
-BUF/BUFFER : actually uses the specified buffer size (default 512KB).
+BUF/BUFFER : actually uses the specified buffer size (default 512KB).\
 DATES : actually calls SetFileDate() when specified alone, without
-requiring CLONE.
+requiring CLONE.\
 VERIFY : actually re-reads the destination after every write and
 compares byte-for-byte with the source. Corrupted files are replaced
-immediately.
+immediately.\
 UPDATE : skips files where destination exists with identical size and
 datestamp. Re-copies if destination is smaller (previous interrupted
 copy) or older than source. Reports "[dest incomplete: X/Y bytes]" for
-visibility.
+visibility.\
 NDATE : with UPDATE, compare size only (ignore datestamp). Useful when
 a previous backup was done without DATES/CLONE and destination files
-have the wrong date.
+have the wrong date.\
 VERBOSE : shows skipped (up-to-date) files. By default only active
-copies and errors are displayed.
+copies and errors are displayed.\
 MAXERR/K/N : abort after N errors. Useful for unattended large copies
-over unreliable media. Default 0 = no limit.
-FORCE : strips write-protection from destination before copying.
+over unreliable media. Default 0 = no limit.\
+FORCE : strips write-protection from destination before copying.\
 CHECK : audit mode - no files are copied. For each source file,
-compares size against destination and reports Missing or SizeDiff.
+compares size against destination and reports Missing or SizeDiff.\
 Combine with NDATE for a fast size-only scan. Useful before a resume
 to see what actually needs attention.
 
