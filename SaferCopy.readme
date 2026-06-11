@@ -6,9 +6,6 @@ Version: 1.4
 date: 2026.06.11
 Requires: AmigaOS 2.04+ (V37), 68000+
 Architecture: m68k-amigaos
-Uploader: aminet@aminet.net (Urban Mueller)
-Author: aminet@aminet.net (Urban Mueller)
----
 
 SaferCopy 1.4 - A reliable? replacement for AmigaDOS Copy 47.7
 
