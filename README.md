@@ -3,7 +3,7 @@ Author: Nowee (with Claude)
 Uploader: Nowee
 Type: util/cli
 Version: 1.4
-date: 2026.06.11
+Date: 2026.06.11
 Requires: AmigaOS 2.04+ (V37), 68000+
 Architecture: m68k-amigaos
 
@@ -140,4 +140,4 @@ HISTORY
 1.1 - Added NDATE, VERBOSE, recursive mkdir, fixed sys: path handling,
       fixed Shell window not closing after exit.
 
-1.0 - Initial release.
+1.0 - Initial release (2011).
