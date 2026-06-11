@@ -15,7 +15,7 @@ Copy 47.7 shipped with AmigaOS 3.2.3 silently ignores the VERIFY, DATES
 and BUF/BUFFER keywords documented in the AmigaDOS 3.2.3 manual.
 Hence this version.
 
-FEATURES:
+FEATURES
 - Lets you copy only the missing, uncomplete or older files with the
   "update" option.
 - Partial write detection: checks Write() return value on every call.
@@ -36,7 +36,8 @@ It works for me, but I can't garantee it won't burn down your house to
 the ground so please make a copy of it first... Uhh wait.. :D
 It comes with no garantee whatsoever.
 
-USAGE:
+USAGE
+
 *** Please use stack 32768 ***
 
 BUF/BUFFER : actually uses the specified buffer size (default 512KB).\
