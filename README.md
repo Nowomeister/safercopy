@@ -2,12 +2,12 @@ Short: Reliable file copy VERIFY/UPDATE/BUFFER\
 Author: Nowee (with Claude)\
 Uploader: Nowee\
 Type: util/cli\
-Version: 1.42\
+Version: 1.4.2\
 Date: 2026.06.11\
 Requires: AmigaOS 2.04+ (V37), 68000+\
 Architecture: m68k-amigaos\
 
-SaferCopy 1.42 - A reliable replacement for AmigaDOS Copy 47.7
+SaferCopy 1.4.2 - A reliable replacement for AmigaDOS Copy 47.7
 
 
 ![A successful copy](/images/safercopy.png)
