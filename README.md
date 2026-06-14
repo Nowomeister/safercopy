@@ -211,7 +211,8 @@ HISTORY
       reconfigured for long names (PFS3 setfsname); CHECK gives a dry-run
       preview. Added PROGRESS/S: live percentage while copying files
       larger than 2 MB. Claude fixed C89 mistakes for SAS/C (declarations
-      after statements, // comments, a long-long percentage calc).\
+      after statements, // comments, a long-long percentage calc). Cool
+      compilation tip from a Gunther. Y hallo thar!
 1.4.1 - Let's not talk about it, would you?\
 1.4 - Fixed a stack smash in the error logger: error messages for paths
       longer than ~350 characters overflowed a fixed 384-byte buffer
