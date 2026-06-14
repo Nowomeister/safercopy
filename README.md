@@ -194,7 +194,7 @@ can be made resident with the Shell RESIDENT command.
 
 SOURCES
 
-Available on GitHub, https://github.com/Nowomeister/safercopy/\
+Available on GitHub, https://github.com/Nowomeister/safercopy/ \
 They also may be bundled with the archive. Or Not. Depends of the 
 wind's direction.
 
