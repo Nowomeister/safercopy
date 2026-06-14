@@ -4,7 +4,7 @@ Uploader: Nowee@beamreactor.com
 Type: util/cli
 Version: 1.4.2
 date: 2026.06.14
-Requires: AmigaOS 2.04+ (V37), 68000+
+Requires: AmigaOS 2.04+ (V37), 68020+
 Architecture: m68k-amigaos
 Replaces: SaferCopy1.4.lha
 
@@ -12,11 +12,13 @@ Replaces: SaferCopy1.4.lha
 ---
 SaferCopy 1.4.2 - A reliable replacement for AmigaDOS Copy 47.7
 
+
 BACKGROUND
 
 Copy 47.7 shipped with AmigaOS 3.2.3 silently ignores the VERIFY, DATES
 and BUF/BUFFER keywords documented in the AmigaDOS 3.2.3 manual.
 Hence this version.
+
 
 FEATURES:
 - Lets you copy only the missing, uncomplete or older files with the
@@ -32,16 +34,17 @@ FEATURES:
 - Error buffering, errors gets printed both immediately AND are
   summarised at the end. No need to watch the terminal for ages.
 
-TESTED (MD5, etc) on Amiga 4000, 3000T, WinUAE, over a tremendous 
-amount of files. And again.
+Tested (MD5, etc) on Amiga 4000, 3000T, WinUAE, over a tremendous
+amount of files. And again. Aaand again. And again. Man, it's exhausting.
 
-It works for me, but I can't garantee it won't burn down your house
-to the ground so please make a copy of it first... Uhh wait.. :D
+It works for me, but I can't garantee it won't burn down your house to
+the ground so please make a copy of it first... Uhh wait.. :D
 It comes with no garantee whatsoever.
 
 Thanks to Kolla for the testing.
 
-It's been fixed, and broken too, with the help of Claude Opus 4.8
+It's been fixed.. or not.. with the help of Claude Opus 4.8
+
 
 USAGE:
 *** Please use stack 32768 ***
@@ -49,32 +52,24 @@ USAGE:
 BUF/BUFFER : actually uses the specified buffer size (default 512KB).
 DATES : actually calls SetFileDate() when specified alone, without
 requiring CLONE.
-
 VERIFY : actually re-reads the destination after every write and
 compares byte-for-byte with the source. Corrupted files are replaced
 immediately.
-
 UPDATE : skips files where destination exists with identical size and
 datestamp. Re-copies if destination is smaller (previous interrupted
 copy) or older than source. Reports "[dest incomplete: X/Y bytes]" for
 visibility.
-
 NDATE : with UPDATE, compare size only (ignore datestamp). Useful when
-a previous backup was done without DATES/CLONE and destination files11
+a previous backup was done without DATES/CLONE and destination files
 have the wrong date.
-
 VERBOSE : shows skipped (up-to-date) files. By default only active
 copies and errors are displayed.
-
 PROGRESS : show a live percentage while copying, for files larger than
 2 MB (updates in place on one line). Handy for big disk images over slow
 media. Suppressed by QUIET.
-
 MAXERR/K/N : abort after N errors. Useful for unattended large copies
 over unreliable media. Default 0 = no limit.
-
 FORCE : strips write-protection from destination before copying.
-
 CHECK : audit mode - no files are copied. For each source file,
 compares size against destination and reports Missing or SizeDiff.
 Combine with NDATE for a fast size-only scan. Useful before a resume
@@ -148,19 +143,15 @@ Catch up after a backup done without DATES (ignore datestamp differences)
 SaferCopy FROM sys: TO Multimedia:SYSBACKUP/ ALL UPDATE NDATE CLONE
   VERIFY NOREQ
 
-Rename truncated files. NAMELEN is the truncation size, ie 30 char
-for FFS or a default PFS3 partition, to be used with RENAME. 
-SaferCopy FROM <src> TO <dst> ALL RENAME NAMELEN=30
-
-
 
 LANGUAGES
 
 The catalogs are LLM translated. Please report in case of impediments...
 
-Catalogs are included for: english, francais, deutsch, espanol,
-nederlands, dansk, norsk, polski, czech, slovensko, portugues, catala,
-euskara, turkce, srpski, russian, greek, roman.
+Catalogs are included for:
+  catala, czech, dansk, deutsch, english, espanol, euskara, francais,
+  greek, italiano, nederlands, norsk, polski, portugues, roman,
+  russian, slovensko, srpski, turkce.
 
 Install: copy catalogs/$LANGUAGE/SaferCopy.catalog to
 LOCALE:Catalogs/$LANGUAGE/SaferCopy.catalog
@@ -188,7 +179,7 @@ They also may be bundled with the archive. Or Not. Depends of the
 wind's direction.
 
 
-TODO:
+TODO
 Test on OS 2.04, 3.0, 3.1.
 
 
@@ -201,7 +192,8 @@ HISTORY
       reconfigured for long names (PFS3 setfsname); CHECK gives a dry-run
       preview. Added PROGRESS/S: live percentage while copying files
       larger than 2 MB. Claude fixed C89 mistakes for SAS/C (declarations
-      after statements, // comments, a long-long percentage calc).
+      after statements, // comments, a long-long percentage calc). Cool 
+	  compilation tip from a Gunther. Y hallo thar!
 1.4.1 - Let's not talk about it, would you?
 1.4 - Fixed a stack smash in the error logger: error messages for paths
       longer than ~350 characters overflowed a fixed 384-byte buffer
