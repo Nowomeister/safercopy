@@ -46,5 +46,16 @@
 #define MSG_CHECK_OK           36
 #define MSG_CHECK_MISMATCH     37
 #define MSG_OPT_CHECK          38
+#define MSG_BAD_DIRENTRY       39
+#define MSG_NAME_TOO_LONG      40
+#define MSG_OPT_RENAME         41
+#define MSG_OPT_NAMELEN        42
+#define MSG_WOULD_RENAME       43
+#define MSG_RENAMED            44
+#define MSG_RENAME_FAIL        45
+#define MSG_RENAME_NEEDS       46
+#define MSG_RENAME_NEEDS_DIR   47
+#define MSG_RENAME_REPORT      48
+#define MSG_RENAME_NOTRUNC     49
 
 #endif /* SAFERCOPY_CAT_H */

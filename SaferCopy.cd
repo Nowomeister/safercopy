@@ -124,3 +124,36 @@ MSG_CHECK_MISMATCH (37///)
 
 MSG_OPT_CHECK (38///)
 , CHECK
+
+MSG_BAD_DIRENTRY (39///)
+SaferCopy: corrupt directory entry - skipped
+
+MSG_NAME_TOO_LONG (40///)
+SaferCopy: name too long (%ld > %ld)
+
+MSG_OPT_RENAME (41///)
+, RENAME
+
+MSG_OPT_NAMELEN (42///)
+, NAMELEN=%ld
+
+MSG_WOULD_RENAME (43///)
+  WouldRen %s -> %s
+
+MSG_RENAMED (44///)
+  Rename  %s -> %s
+
+MSG_RENAME_FAIL (45///)
+SaferCopy: rename failed
+
+MSG_RENAME_NEEDS (46///)
+SaferCopy: RENAME requires NAMELEN=<n>
+
+MSG_RENAME_NEEDS_DIR (47///)
+SaferCopy: RENAME of a single file needs a directory TO
+
+MSG_RENAME_REPORT (48///)
+SaferCopy: %ld renamed  %ld skipped  %ld missing  %ld error(s)%s
+
+MSG_RENAME_NOTRUNC (49///)
+  Missing  %s  (looked for: %s)

@@ -51,9 +51,10 @@
 
 /* --- Version ----------------------------------------------------- */
 /*
- * $VER: SaferCopy 1.42 (2026.06.14) Nowee
+ * $VER: SaferCopy 1.4.2 (2026.06.14) Nowee with Claude
+ * Parsed by Version, VersionWB, and the Aminet indexer.
  */
-const char * const version = "$VER: SaferCopy 1.42 (2026.06.14) Nowee";
+const char * const version = "$VER: SaferCopy 1.4.2 (2026.06.14) Nowee with Claude";
 
 /* --- Includes ---------------------------------------------------- */
 #include <proto/dos.h>
@@ -1029,6 +1030,8 @@ static BOOL CopyFile(const char *src, const char *dst)
     BOOL   ok = FALSE;
     struct FileInfoBlock *fib;
     BPTR   lock;
+    ULONG  bytesCopied;     /* PROGRESS : octets ecrits jusqu ici */
+    BOOL   showProgress;    /* PROGRESS actif pour ce fichier ?   */
 
     fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
     if (!fib)
@@ -1162,8 +1165,9 @@ static BOOL CopyFile(const char *src, const char *dst)
 
     /* --- Boucle de copie par blocs ---------------------------- */
     ok = TRUE;
-	ULONG bytesCopied = 0;
-	BOOL showProgress = G.progress && !G.quiet && (fib->fib_Size > (2 * 1024 * 1024));
+    bytesCopied  = 0;
+    showProgress = G.progress && !G.quiet &&
+                   (fib->fib_Size > (2L * 1024L * 1024L));
     while ((nRead = Read(srcFH, G.buf, G.bufSize)) > 0)
     {
         nWritten = Write(dstFH, G.buf, nRead);
@@ -1179,12 +1183,12 @@ static BOOL CopyFile(const char *src, const char *dst)
             ok = FALSE;
             break;
         }
-		bytesCopied += nWritten;
-		if (showProgress)
-			ShowProgress(bytesCopied, fib->fib_Size);
-	}
-	if (showProgress)
-		OUT("\n");   /* on passe à la ligne une fois le fichier terminé */
+        bytesCopied += (ULONG)nWritten;
+        if (showProgress)
+            ShowProgress(bytesCopied, (ULONG)fib->fib_Size);
+    }
+    if (showProgress)
+        OUT("\n");   /* passage a la ligne une fois le fichier termine */
     if (nRead < 0)
     {
         Fail(CS(MSG_READ_ERROR, "SaferCopy: read error"), src);
@@ -1547,6 +1551,8 @@ static BOOL EnsurePath(const char *path)
     return IsDir(path, NULL);
 }
 
+
+
 /*
  * CheckAbort : verifie si on a atteint MAXERR.
  * Si oui, logue un message final et arme G.abort.
@@ -1569,20 +1575,29 @@ static void CheckAbort(void)
     }
 }
 
-/*
- * ShowProgress : affiche la progression d'une copie
- */
 static void ShowProgress(ULONG done, ULONG total)
 {
+    int percent;
+
     if (total == 0) return;
 
-    int percent = (int)((done * 100ULL) / total);
+    /*
+     * Calcul du pourcentage en 32 bits, sans long long (support
+     * douteux sous SAS/C 6). done * 100 deborde un ULONG des que
+     * done > ~42 Mo : pour les gros fichiers on divise d abord.
+     * Pour total < 100 (jamais atteint : PROGRESS gate a 2 Mo)
+     * on garde done * 100 qui ne peut pas deborder.
+     */
+    if (total >= 100UL)
+        percent = (int)(done / (total / 100UL));
+    else
+        percent = (int)((done * 100UL) / total);
 
-    if (total >= (10 * 1024 * 1024)) {   // >= 10 Mo
+    if (total >= (10UL * 1024UL * 1024UL)) {   /* >= 10 Mo */
         OUT("\r  %3d%%  (%lu.%lu / %lu.%lu MB)",
             percent,
             (unsigned long)(done / (1024*1024)),
-            (unsigned long)((done % (1024*1024)) / (100*1024)),   // 1 décimaaaale
+            (unsigned long)((done % (1024*1024)) / (100*1024)),   /* 1 decimale */
             (unsigned long)(total / (1024*1024)),
             (unsigned long)((total % (1024*1024)) / (100*1024)));
     } else {
@@ -1591,6 +1606,7 @@ static void ShowProgress(ULONG done, ULONG total)
             (unsigned long)done,
             (unsigned long)total);
     }
+
     fflush(stdout);
 }
 
