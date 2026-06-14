@@ -211,8 +211,8 @@ HISTORY
       reconfigured for long names (PFS3 setfsname); CHECK gives a dry-run
       preview. Added PROGRESS/S: live percentage while copying files
       larger than 2 MB. Claude fixed C89 mistakes for SAS/C (declarations
-      after statements, // comments, a long-long percentage calc).
-1.4.1 - Let's not talk about it, would you?
+      after statements, // comments, a long-long percentage calc).\
+1.4.1 - Let's not talk about it, would you?\
 1.4 - Fixed a stack smash in the error logger: error messages for paths
       longer than ~350 characters overflowed a fixed 384-byte buffer
       (NOSTKCHK + no MMU = silent corruption, delayed lockup on long
@@ -230,15 +230,15 @@ HISTORY
       destination. Optional pure/residentable build (GCC -resident
       "pure" make target, SAS/C RESIDENT + cres.o); the default binary
       stays non-resident until the pure variant is validated on real
-      hardware.
+      hardware.\
 1.3 - Fixed lockup on directory names containing AmigaDOS pattern
       special characters (& ~ # ? ( ) [ ] | %). Added CHECK/S audit
-      mode (size comparison, no copy).
+      mode (size comparison, no copy).\
 1.2 - Added locale catalog support (18 languages), $VER string,
-      minimum OS version check (V37 / AmigaOS 2.04+).
+      minimum OS version check (V37 / AmigaOS 2.04+).\
 1.1 - Added NDATE, VERBOSE, recursive mkdir, fixed sys: path handling,
-      fixed Shell window not closing after exit.
-1.0 - Initial release.
+      fixed Shell window not closing after exit.\
+1.0 - Initial release.\
 1.1 - Added NDATE, VERBOSE, recursive mkdir, fixed sys: path handling,
-      fixed Shell window not closing after exit.
-1.0 - Initial release (2011).
+      fixed Shell window not closing after exit.\
+1.0 - Initial release (2011).\
