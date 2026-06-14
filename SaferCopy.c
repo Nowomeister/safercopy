@@ -24,12 +24,15 @@
  *   binaire pur, utilisable avec la commande RESIDENT du Shell.
  *
  * Compilation GCC cross (m68k-amigaos-gcc 6.x) :
- *   m68k-amigaos-gcc -O2 -m68000 -noixemul -resident -Wall
+ *   m68k-amigaos-gcc -O2 -m68000 -noixemul -Wall
  *      -o SaferCopy SaferCopy.c
- *   -resident : data base-relative copiee a chaque invocation ->
- *   binaire pur (residentable). Les ~26 Ko de statiques (g_errBuf,
- *   G, bases de librairies) sont dupliques par instance, jamais
- *   partages.
+ *   Variante PURE (residentable) : ajouter -resident (compilation
+ *   ET edition de liens). Data base-relative copiee a chaque
+ *   invocation, les ~26 Ko de statiques sont dupliques par
+ *   instance. ATTENTION : le -resident de bebbo gcc est fragile ;
+ *   valider la variante pure sur du vrai materiel (verify de
+ *   masse) avant de la distribuer. Voir SaferCopy_GCC.make,
+ *   cibles "pure" et "both".
  *
  * Notes de portabilite :
  *   - printf/fprintf/sprintf (stdio libnix) a la place des macros
@@ -48,10 +51,9 @@
 
 /* --- Version ----------------------------------------------------- */
 /*
- * $VER: SaferCopy 1.4 (2026.06.11) Nowee with Claude
- * Parsed by Version, VersionWB, and the Aminet indexer.
+ * $VER: SaferCopy 1.42 (2026.06.14) Nowee
  */
-const char * const version = "$VER: SaferCopy 1.4 (2026.06.11) Nowee with Claude";
+const char * const version = "$VER: SaferCopy 1.42 (2026.06.14) Nowee";
 
 /* --- Includes ---------------------------------------------------- */
 #include <proto/dos.h>
@@ -88,16 +90,26 @@ const char * const version = "$VER: SaferCopy 1.4 (2026.06.11) Nowee with Claude
 #define TEMPLATE \
     "FROM/M,TO/A,ALL/S,QUIET/S,BUF=BUFFER/K/N," \
     "CLONE/S,DATES/S,NOPRO/S,VERIFY/S,NOREQ/S,UPDATE/S,FORCE/S," \
-    "MAXERR/K/N,NDATE/S,VERBOSE/S,CHECK/S"
+    "MAXERR/K/N,NDATE/S,VERBOSE/S,CHECK/S,NAMELEN/K/N,RENAME/S," \
+    "PROGRESS/S"
 
 enum {
     A_FROM=0, A_TO, A_ALL, A_QUIET, A_BUF,
-    A_CLONE, A_DATES, A_NOPRO, A_VERIFY, A_NOREQ, A_UPDATE, A_FORCE,
+    A_CLONE,
+	A_DATES,
+	A_NOPRO,
+	A_VERIFY,
+	A_NOREQ,
+	A_UPDATE,
+	A_FORCE,
     A_MAXERR,
     A_NDATE,
     A_VERBOSE,
     A_CHECK,
-    A_COUNT
+    A_NAMELEN,
+    A_RENAME,
+	A_PROGRESS,
+    A_COUNT,
 };
 
 /* --------------------------------------------------------------*/
@@ -186,10 +198,31 @@ static struct {
     BOOL    ndate;      /* UPDATE compare taille seulement (pas date) */
     BOOL    verbose;    /* afficher les fichiers ignores (UPDATE a jour) */
     BOOL    check;      /* CHECK : audit taille seulement, pas de copie  */
+	BOOL	progress;	/* PROGRESS: montre la completion d'un ficher */
     LONG    nCopied;
     LONG    nSkipped;
     LONG    nErrors;
     LONG    maxErr;     /* 0 = illimite ; >0 = abandon si nErrors >= maxErr */
+    LONG    nameMax;    /* NAMELEN : 0 = off ; >0 = signaler et sauter
+                           tout nom de plus de nameMax caracteres.
+                           Audit des volumes PFS3 configures avec la
+                           limite FFS par defaut (30) : NAMELEN=30
+                           avec CHECK = inventaire sans copie.       */
+    BOOL    rename;     /* RENAME : ne RIEN copier. Pour chaque nom
+                           source plus long que nameMax, renommer la
+                           version tronquee deja presente sur la
+                           cible vers le nom complet (operation de
+                           metadonnees, zero transfert). Sert a
+                           reparer un backup tronque apres avoir
+                           releve la limite du volume (setfsname).
+                           Combine avec CHECK = simulation.          */
+    LONG    nRenamed;
+    LONG    nMissing;   /* RENAME : entrees absentes de la cible.
+                           PAS une erreur (RENAME ne copie pas) : ces
+                           fichiers sont juste a recopier par un UPDATE
+                           ulterieur. Inclut les perdants de collision
+                           (deux noms longs -> meme nom court). Detail
+                           ligne par ligne en VERBOSE seulement.       */
     BOOL    abort;      /* mis a 1 quand maxErr est depasse          */
     LONG    retCode;
     APTR    oldWinPtr;  /* pr_WindowPtr original pour NOREQ         */
@@ -247,9 +280,18 @@ static BOOL  NeedsCopy  (const char *src, const char *dst);
 static BOOL  EnsureDir  (const char *path);
 static BOOL  EnsurePath (const char *path);
 static BOOL  IsDir      (const char *path, struct FileInfoBlock *fib_out);
-static void  JoinPath   (char *out, LONG outlen,
-                         const char *dir, const char *leaf);
+
+static BOOL  JoinPathSafe(char *out, LONG outlen, const char *dir,
+                         const char *leaf, const char *srcPath);
 static void  Fail       (const char *msg, const char *arg);
+static void  ShowProgress(ULONG done, ULONG total);
+static void  FailNameLen(const char *path, LONG n);
+static void  RenameDir  (const char *dst, const char *leaf,
+                         const char *srcPath, char *fullBuf,
+                         char *truncBuf, char *descendBuf);
+static void  RenameFile (const char *dst, const char *leaf,
+                         const char *srcPath, char *fullBuf,
+                         char *truncBuf);
 static void  PrintErrors(void);
 static void  CheckAbort (void);
 static void  Die        (LONG code);
@@ -301,25 +343,37 @@ int main(void)
         return RETURN_FAIL;
     }
 
-    fromList = (STRPTR *) args[A_FROM];
-    toPath   = (const char *) args[A_TO];
-    G.all    = (BOOL) args[A_ALL];
-    G.quiet  = (BOOL) args[A_QUIET];
-    G.clone  = (BOOL) args[A_CLONE];
-    G.dates  = (BOOL) args[A_DATES] || G.clone;
-    G.nopro  = (BOOL) args[A_NOPRO];
-    G.verify = (BOOL) args[A_VERIFY];
-    G.update = (BOOL) args[A_UPDATE];
-    G.force  = (BOOL) args[A_FORCE];
-    G.ndate   = (BOOL) args[A_NDATE];
-    G.verbose = (BOOL) args[A_VERBOSE];
-    G.check   = (BOOL) args[A_CHECK];
+    fromList   = (STRPTR *) args[A_FROM];
+    toPath     = (const char *) args[A_TO];
+    G.all      = (BOOL) args[A_ALL];
+    G.quiet    = (BOOL) args[A_QUIET];
+    G.clone    = (BOOL) args[A_CLONE];
+    G.dates    = (BOOL) args[A_DATES] || G.clone;
+    G.nopro    = (BOOL) args[A_NOPRO];
+    G.verify   = (BOOL) args[A_VERIFY];
+    G.update   = (BOOL) args[A_UPDATE];
+    G.force    = (BOOL) args[A_FORCE];
+    G.ndate    = (BOOL) args[A_NDATE];
+    G.verbose  = (BOOL) args[A_VERBOSE];
+    G.check    = (BOOL) args[A_CHECK];
+	G.progress = (BOOL) args[A_PROGRESS];
 
     /*
      * MAXERR : 0 = pas de limite (defaut).
      * MAXERR=10 -> abandonne apres 10 erreurs.
      */
     G.maxErr = args[A_MAXERR] ? *(LONG *)args[A_MAXERR] : 0;
+
+    /* NAMELEN : 0 = off. NAMELEN=30 -> signale tout nom plus long. */
+    G.nameMax = args[A_NAMELEN] ? *(LONG *)args[A_NAMELEN] : 0;
+    G.rename  = (BOOL) args[A_RENAME];
+
+    if (G.rename && G.nameMax <= 0)
+    {
+        ERR(CS(MSG_RENAME_NEEDS, "SaferCopy: RENAME requires NAMELEN=<n>\n"));
+        FreeArgs(rda);
+        Die(RETURN_FAIL);
+    }
 
     /*
      * BUF : ReadArgs retourne un pointeur sur LONG pour les args /N.
@@ -359,13 +413,16 @@ int main(void)
     }
 
     if (!G.quiet) {
-        OUT("SaferCopy: buffer %lu KB%s%s%s%s%s",
+        OUT("SaferCopy: buffer %lu KB%s%s%s%s%s%s",
             (unsigned long)(G.bufSize / 1024),
             G.verify  ? CS(MSG_OPT_VERIFY,  ", VERIFY")  : "",
             G.dates   ? CS(MSG_OPT_DATES,   ", DATES")   : "",
             G.update  ? CS(MSG_OPT_UPDATE,  ", UPDATE")  : "",
             G.verbose ? CS(MSG_OPT_VERBOSE, ", VERBOSE") : "",
-            G.check   ? CS(MSG_OPT_CHECK,   ", CHECK")   : "");
+            G.check   ? CS(MSG_OPT_CHECK,   ", CHECK")   : "",
+            G.rename  ? CS(MSG_OPT_RENAME,  ", RENAME")  : "");
+        if (G.nameMax > 0)
+            OUT(CS(MSG_OPT_NAMELEN, ", NAMELEN=%ld"), (long)G.nameMax);
         if (G.maxErr > 0)
             OUT(CS(MSG_OPT_MAXERR, ", MAXERR=%ld"), (long)G.maxErr);
         OUT("\n");
@@ -399,6 +456,7 @@ int main(void)
     {
         const char *src = (const char *)fromList[i];
         char        dst[MAXPATH];
+        char        tdst[MAXPATH];   /* RENAME : chemin tronque       */
 
         if (IsDir(src, NULL))
         {
@@ -412,13 +470,26 @@ int main(void)
                 continue;
             }
             if (toIsDir)
-                JoinPath(dst, MAXPATH, toPath, xPart(src));
+            {
+                /* RENAME ne tronque pas le chemin de tete : on garde le
+                 * nom complet et on laisse CopyDir resoudre par niveau. */
+                if (G.rename)
+                    JoinPathSafe(dst, MAXPATH, toPath, xPart(src), NULL);
+                else if (!JoinPathSafe(dst, MAXPATH, toPath, xPart(src), src))
+                {
+                    G.nErrors++;
+                    G.retCode = RETURN_WARN;
+                    CheckAbort();
+                    continue;
+                }
+            }
             else
             {
                 strncpy(dst, toPath, (size_t)(MAXPATH - 1));
                 dst[MAXPATH - 1] = '\0';
             }
-            if (!EnsurePath(dst))
+            /* RENAME ne cree aucun repertoire : la cible existe deja. */
+            if (!G.rename && !EnsurePath(dst))
             {
                 Fail(CS(MSG_NO_MKDIR, "SaferCopy: cannot create"), dst);
                 G.nErrors++;
@@ -428,10 +499,33 @@ int main(void)
             }
             CopyDir(src, dst);
         }
+        else if (G.rename)
+        {
+            /* Fichier isole en mode RENAME : la cible doit etre un dir. */
+            if (!toIsDir)
+            {
+                Fail(CS(MSG_RENAME_NEEDS_DIR,
+                        "SaferCopy: RENAME of a single file needs a directory TO"),
+                     src);
+                G.nErrors++;
+                G.retCode = RETURN_WARN;
+                CheckAbort();
+                continue;
+            }
+            RenameFile(toPath, xPart(src), src, dst, tdst);
+        }
         else
         {
             if (toIsDir)
-                JoinPath(dst, MAXPATH, toPath, xPart(src));
+            {
+                if (!JoinPathSafe(dst, MAXPATH, toPath, xPart(src), src))
+                {
+                    G.nErrors++;
+                    G.retCode = RETURN_WARN;
+                    CheckAbort();
+                    continue;
+                }
+            }
             else
             {
                 strncpy(dst, toPath, (size_t)(MAXPATH - 1));
@@ -449,7 +543,15 @@ int main(void)
     /* --- Rapport final -------------------------------------------- */
     PrintErrors();   /* toujours, meme en mode QUIET */
 
-    if (!G.quiet || G.nErrors > 0)
+    if (G.rename)
+    {
+        if (!G.quiet || G.nErrors > 0)
+            OUT(CS(MSG_RENAME_REPORT,
+                   "SaferCopy: %ld renamed  %ld skipped  %ld missing  %ld error(s)%s\n"),
+                (long)G.nRenamed, (long)G.nSkipped, (long)G.nMissing, (long)G.nErrors,
+                G.abort ? CS(MSG_ABORT_TAG, "  [ABORT: MAXERR reached]") : "");
+    }
+    else if (!G.quiet || G.nErrors > 0)
         OUT(CS(MSG_FINAL_REPORT, "SaferCopy: %ld copied  %ld skipped  %ld error(s)%s\n"),
             (long)G.nCopied, (long)G.nSkipped, (long)G.nErrors,
             G.abort ? CS(MSG_ABORT_TAG, "  [ABORT: MAXERR reached]") : "");
@@ -499,6 +601,195 @@ static void EscapeAmigaPattern(char *out, ULONG outlen, const char *in)
 }
 
 /* --------------------------------------------------------------*/
+/*  ValidFibName                                                        */
+/*                                                                      */
+/*  Validation defensive du nom retourne par MatchFirst/MatchNext.     */
+/*  Une entree de repertoire corrompue (vu en vrai sur PFS3 :          */
+/*  "filename too long" + "corrupt directory entry" detectes par       */
+/*  PFSDoctor) peut produire un fib_FileName non termine, vide, ou     */
+/*  contenant des separateurs. Copier un tel nom PROPAGE la            */
+/*  corruption : le handler accepte de recreer le nom a destination    */
+/*  sans le valider. On refuse, on signale, on saute.                  */
+/*  fib_FileName fait 108 octets ; les FS Amiga acceptent au plus      */
+/*  107 caracteres (30 pour FFS).                                      */
+/* --------------------------------------------------------------*/
+
+static BOOL ValidFibName(const char *name)
+{
+    LONG i;
+
+    for (i = 0; i < 108; i++)
+    {
+        char c = name[i];
+        if (c == '\0')
+            return (BOOL)(i > 0);   /* nom vide = invalide          */
+        if (c == '/' || c == ':')
+            return FALSE;           /* separateur dans un nom       */
+    }
+    return FALSE;                   /* 108 octets sans zero final   */
+}
+
+/* --------------------------------------------------------------*/
+/*  RENAME : reparer un backup tronque                                 */
+/*                                                                      */
+/*  Contexte : un backup a ete fait sur un volume PFS3 limite a 30      */
+/*  caracteres (defaut FFS), les noms longs ont donc ete tronques      */
+/*  (par un outil de copie quelconque). Le volume a depuis ete         */
+/*  reconfigure pour les noms longs (setfsname). Le contenu est deja la,*/
+/*  sous le nom court : on RENOMME vers le nom complet. Aucun octet     */
+/*  n est recopie. Recopier aurait tout retransfere ET laisse les       */
+/*  versions courtes en orphelins.                                      */
+/*                                                                      */
+/*  Politique de securite :                                            */
+/*    - jamais d ecrasement : on ne renomme que si le nom complet      */
+/*      n existe pas deja sur la cible.                                 */
+/*    - jamais de suppression.                                         */
+/*    - CHECK + RENAME = simulation : on affiche, on ne touche rien.   */
+/*  Collisions : deux noms longs partageant les nameMax premiers       */
+/*  caracteres pointent vers le meme nom court. Le premier renomme le   */
+/*  consomme ; le second est alors signale Missing (a recopier par un   */
+/*  UPDATE ulterieur).                                                  */
+/* --------------------------------------------------------------*/
+
+/* Construit truncBuf = dst / (nameMax premiers caracteres de leaf). */
+static void BuildTrunc(char *truncBuf, const char *dst, const char *leaf)
+{
+    char t[108];
+    memcpy(t, leaf, (size_t)G.nameMax);
+    t[G.nameMax] = '\0';
+    JoinPathSafe(truncBuf, MAXPATH, dst, t, NULL);
+}
+
+/*
+ * RenameDir : resout un sous-repertoire en mode RENAME et indique
+ * dans descendBuf le repertoire destination ou recurser (vide si
+ * rien a explorer).
+ */
+static void RenameDir(const char *dst, const char *leaf,
+                      const char *srcPath, char *fullBuf,
+                      char *truncBuf, char *descendBuf)
+{
+    LONG nl = (LONG)strlen(leaf);
+    BPTR l;
+
+    JoinPathSafe(fullBuf, MAXPATH, dst, leaf, NULL);
+    descendBuf[0] = '\0';
+
+    /* Nom non tronque : repertoire normal, on descend s il existe.
+     * Absent = sous-arbre pas sur la cible : ce n est PAS une erreur en
+     * mode RENAME (on ne copie pas), juste un manque informatif. */
+    if (nl <= G.nameMax)
+    {
+        l = xLock(fullBuf, ACCESS_READ);
+        if (l) { UnLock(l); strcpy(descendBuf, fullBuf); }
+        else
+        {
+            if (G.verbose)
+                OUT(CS(MSG_CHECK_MISSING, "  Missing  %s\n"), srcPath);
+            G.nMissing++;
+        }
+        return;
+    }
+
+    /* Nom long : deja au nom complet sur la cible ? */
+    l = xLock(fullBuf, ACCESS_READ);
+    if (l) { UnLock(l); strcpy(descendBuf, fullBuf); return; }
+
+    /* Sinon, chercher la version tronquee. */
+    BuildTrunc(truncBuf, dst, leaf);
+    l = xLock(truncBuf, ACCESS_READ);
+    if (!l)
+    {
+        /* VERBOSE : afficher AUSSI le chemin tronque cherche, pour
+         * diagnostiquer une non-correspondance de prefixe. */
+        if (G.verbose)
+            OUT(CS(MSG_RENAME_NOTRUNC, "  Missing  %s  (looked for: %s)\n"),
+                srcPath, truncBuf);
+        G.nMissing++;
+        return;
+    }
+    UnLock(l);
+
+    if (G.check)   /* simulation : on descend dans le tronque pour le rapport */
+    {
+        OUT(CS(MSG_WOULD_RENAME, "  WouldRen %s -> %s\n"), truncBuf, fullBuf);
+        strcpy(descendBuf, truncBuf);
+        return;
+    }
+
+    if (Rename((STRPTR)truncBuf, (STRPTR)fullBuf))
+    {
+        /* VERBOSE seulement : a 100 000 renommages, une ligne chacun
+         * noierait la console (goulot d affichage, l Amiga parait fige).
+         * Par defaut on ne sort que le bilan final. */
+        if (G.verbose)
+            OUT(CS(MSG_RENAMED, "  Rename  %s -> %s\n"), truncBuf, fullBuf);
+        G.nRenamed++;
+        strcpy(descendBuf, fullBuf);   /* descendre dans le nom corrige */
+    }
+    else
+    {
+        Fail(CS(MSG_RENAME_FAIL, "SaferCopy: rename failed"), fullBuf);
+        G.nErrors++; G.retCode = RETURN_WARN; CheckAbort();
+        strcpy(descendBuf, truncBuf);  /* renommage rate : continuer quand meme */
+    }
+}
+
+/*
+ * RenameFile : promeut un fichier tronque vers son nom complet.
+ * Les noms <= nameMax n ont jamais ete tronques : rien a faire.
+ */
+static void RenameFile(const char *dst, const char *leaf,
+                       const char *srcPath, char *fullBuf, char *truncBuf)
+{
+    LONG nl = (LONG)strlen(leaf);
+    BPTR l;
+
+    if (nl <= G.nameMax) return;
+
+    JoinPathSafe(fullBuf, MAXPATH, dst, leaf, NULL);
+
+    l = xLock(fullBuf, ACCESS_READ);
+    if (l) { UnLock(l); G.nSkipped++; return; }   /* deja au nom complet */
+
+    BuildTrunc(truncBuf, dst, leaf);
+    l = xLock(truncBuf, ACCESS_READ);
+    if (!l)
+    {
+        /* Ni nom long ni nom court : pas sur la cible (ou perdant de
+         * collision). Pas une erreur : a recopier par un UPDATE.
+         * VERBOSE montre le chemin tronque cherche (diagnostic prefixe). */
+        if (G.verbose)
+            OUT(CS(MSG_RENAME_NOTRUNC, "  Missing  %s  (looked for: %s)\n"),
+                srcPath, truncBuf);
+        G.nMissing++;
+        return;
+    }
+    UnLock(l);
+
+    if (G.check)
+    {
+        OUT(CS(MSG_WOULD_RENAME, "  WouldRen %s -> %s\n"), truncBuf, fullBuf);
+        return;
+    }
+
+    if (Rename((STRPTR)truncBuf, (STRPTR)fullBuf))
+    {
+        /* VERBOSE seulement : a 100 000 renommages, une ligne chacun
+         * noierait la console (goulot d affichage, l Amiga parait fige).
+         * Par defaut on ne sort que le bilan final. */
+        if (G.verbose)
+            OUT(CS(MSG_RENAMED, "  Rename  %s -> %s\n"), truncBuf, fullBuf);
+        G.nRenamed++;
+    }
+    else
+    {
+        Fail(CS(MSG_RENAME_FAIL, "SaferCopy: rename failed"), fullBuf);
+        G.nErrors++; G.retCode = RETURN_WARN; CheckAbort();
+    }
+}
+
+/* --------------------------------------------------------------*/
 /*  CopyDir                                                             */
 /* --------------------------------------------------------------*/
 
@@ -524,6 +815,8 @@ struct DirBufs {
     char pat[MAXPATH * 2 + 8];   /* x2 : pire cas echappement      */
     char subdst[MAXPATH];        /* passe 1 : sous-repertoire dest  */
     char dstfile[MAXPATH];       /* passe 2 : fichier dest          */
+    char truncdst[MAXPATH];      /* RENAME : chemin tronque cible   */
+    char descend[MAXPATH];       /* RENAME : dir ou recurser        */
 };
 
 static void CopyDir(const char *src, const char *dst)
@@ -568,7 +861,37 @@ static void CopyDir(const char *src, const char *dst)
     {
         if (ap->ap_Info.fib_DirEntryType > 0)
         {
-            JoinPath(db->subdst, MAXPATH, dst, ap->ap_Info.fib_FileName);
+            if (!ValidFibName((const char *)ap->ap_Info.fib_FileName))
+            {
+                Fail(CS(MSG_BAD_DIRENTRY,
+                        "SaferCopy: corrupt directory entry - skipped"),
+                     (const char *)ap->ap_Buf);
+                G.nErrors++;
+                G.retCode = RETURN_WARN;
+                CheckAbort();
+                rc = MatchNext(ap);
+                continue;
+            }
+            if (G.rename)
+            {
+                RenameDir(dst, (const char *)ap->ap_Info.fib_FileName,
+                          (const char *)ap->ap_Buf,
+                          db->subdst, db->truncdst, db->descend);
+                if (db->descend[0])
+                    CopyDir((const char *)ap->ap_Buf, db->descend);
+                rc = MatchNext(ap);
+                continue;
+            }
+            if (!JoinPathSafe(db->subdst, MAXPATH, dst,
+                             (const char *)ap->ap_Info.fib_FileName,
+                             (const char *)ap->ap_Buf))
+            {
+                G.nErrors++;
+                G.retCode = RETURN_WARN;
+                CheckAbort();
+                rc = MatchNext(ap);
+                continue;
+            }
             if (G.check)
             {
                 /* Mode CHECK : ne pas creer le repertoire.
@@ -608,7 +931,35 @@ static void CopyDir(const char *src, const char *dst)
     {
         if (ap->ap_Info.fib_DirEntryType < 0)
         {
-            JoinPath(db->dstfile, MAXPATH, dst, ap->ap_Info.fib_FileName);
+            if (!ValidFibName((const char *)ap->ap_Info.fib_FileName))
+            {
+                Fail(CS(MSG_BAD_DIRENTRY,
+                        "SaferCopy: corrupt directory entry - skipped"),
+                     (const char *)ap->ap_Buf);
+                G.nErrors++;
+                G.retCode = RETURN_WARN;
+                CheckAbort();
+                rc = MatchNext(ap);
+                continue;
+            }
+            if (G.rename)
+            {
+                RenameFile(dst, (const char *)ap->ap_Info.fib_FileName,
+                           (const char *)ap->ap_Buf,
+                           db->dstfile, db->truncdst);
+                rc = MatchNext(ap);
+                continue;
+            }
+            if (!JoinPathSafe(db->dstfile, MAXPATH, dst,
+                             (const char *)ap->ap_Info.fib_FileName,
+                             (const char *)ap->ap_Buf))
+            {
+                G.nErrors++;
+                G.retCode = RETURN_WARN;
+                CheckAbort();
+                rc = MatchNext(ap);
+                continue;
+            }
 
             if (G.check)
             {
@@ -703,6 +1054,21 @@ static BOOL CopyFile(const char *src, const char *dst)
     }
     UnLock(lock);
 
+    /* --- NAMELEN : filet de securite sur le nom DESTINATION ----- */
+    /* Les chemins venant de CopyDir ou de la boucle principale     */
+    /* sont deja passes par JoinPathLim (filtres ou tronques).      */
+    /* Ne reste que le cas TO=nom explicite trop long.              */
+    if (G.nameMax > 0)
+    {
+        LONG n = (LONG)strlen(xPart(dst));
+        if (n > G.nameMax)
+        {
+            FailNameLen(dst, n);
+            FreeDosObject(DOS_FIB, fib);
+            return FALSE;
+        }
+    }
+
     /* --- CHECK : audit par taille uniquement, pas de copie ---- */
     if (G.check)
     {
@@ -796,6 +1162,8 @@ static BOOL CopyFile(const char *src, const char *dst)
 
     /* --- Boucle de copie par blocs ---------------------------- */
     ok = TRUE;
+	ULONG bytesCopied = 0;
+	BOOL showProgress = G.progress && !G.quiet && (fib->fib_Size > (2 * 1024 * 1024));
     while ((nRead = Read(srcFH, G.buf, G.bufSize)) > 0)
     {
         nWritten = Write(dstFH, G.buf, nRead);
@@ -811,7 +1179,12 @@ static BOOL CopyFile(const char *src, const char *dst)
             ok = FALSE;
             break;
         }
-    }
+		bytesCopied += nWritten;
+		if (showProgress)
+			ShowProgress(bytesCopied, fib->fib_Size);
+	}
+	if (showProgress)
+		OUT("\n");   /* on passe à la ligne une fois le fichier terminé */
     if (nRead < 0)
     {
         Fail(CS(MSG_READ_ERROR, "SaferCopy: read error"), src);
@@ -1003,12 +1376,32 @@ static BOOL EnsureDir(const char *path)
     return xExDir(path);
 }
 
-static void JoinPath(char *out, LONG outlen,
-                     const char *dir, const char *leaf)
+/*
+ * JoinPathSafe :
+ *   Construit un chemin destination de façon sûre.
+ *   Si G.nameMax > 0 et que 'leaf' dépasse la limite :
+ *     - Appelle FailNameLen(errorPath) si errorPath != NULL
+ *     - Retourne FALSE
+ *   Sinon construit le chemin et retourne le résultat de xAddPart.
+ */
+static BOOL JoinPathSafe(char *out, LONG outlen,
+                         const char *dir, const char *leaf,
+                         const char *errorPath)
 {
+    if (G.nameMax > 0)
+    {
+        LONG n = (LONG)strlen(leaf);
+        if (n > G.nameMax)
+        {
+            if (errorPath)
+                FailNameLen(errorPath, n);
+            return FALSE;
+        }
+    }
+
     strncpy(out, dir, (size_t)(outlen - 1));
     out[outlen - 1] = '\0';
-    xAddPart(out, leaf, (ULONG)outlen);
+    return xAddPart(out, leaf, (ULONG)outlen);
 }
 
 /*
@@ -1079,6 +1472,20 @@ static void Fail(const char *msg, const char *arg)
 }
 
 /*
+ * FailNameLen : signale un nom depassant la limite NAMELEN.
+ * Le format vient du catalog ; buffer static, taille bornee
+ * (le chemin complet est ajoute par Fail, lui-meme borne).
+ */
+static void FailNameLen(const char *path, LONG n)
+{
+    static char m[96];
+
+    sprintf(m, CS(MSG_NAME_TOO_LONG, "SaferCopy: name too long (%ld > %ld)"),
+            (long)n, (long)G.nameMax);
+    Fail(m, path);
+}
+
+/*
  * PrintErrors : vide le buffer d'erreurs sur stderr.
  * Appele une seule fois, juste avant le rapport final.
  */
@@ -1140,8 +1547,6 @@ static BOOL EnsurePath(const char *path)
     return IsDir(path, NULL);
 }
 
-
-
 /*
  * CheckAbort : verifie si on a atteint MAXERR.
  * Si oui, logue un message final et arme G.abort.
@@ -1162,6 +1567,31 @@ static void CheckAbort(void)
             Fail(msg, NULL);
         }
     }
+}
+
+/*
+ * ShowProgress : affiche la progression d'une copie
+ */
+static void ShowProgress(ULONG done, ULONG total)
+{
+    if (total == 0) return;
+
+    int percent = (int)((done * 100ULL) / total);
+
+    if (total >= (10 * 1024 * 1024)) {   // >= 10 Mo
+        OUT("\r  %3d%%  (%lu.%lu / %lu.%lu MB)",
+            percent,
+            (unsigned long)(done / (1024*1024)),
+            (unsigned long)((done % (1024*1024)) / (100*1024)),   // 1 décimaaaale
+            (unsigned long)(total / (1024*1024)),
+            (unsigned long)((total % (1024*1024)) / (100*1024)));
+    } else {
+        OUT("\r  %3d%%  (%lu / %lu bytes)",
+            percent,
+            (unsigned long)done,
+            (unsigned long)total);
+    }
+    fflush(stdout);
 }
 
 static void Die(LONG code)
