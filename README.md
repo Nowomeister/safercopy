@@ -239,7 +239,4 @@ HISTORY
       minimum OS version check (V37 / AmigaOS 2.04+).\
 1.1 - Added NDATE, VERBOSE, recursive mkdir, fixed sys: path handling,
       fixed Shell window not closing after exit.\
-1.0 - Initial release.\
-1.1 - Added NDATE, VERBOSE, recursive mkdir, fixed sys: path handling,
-      fixed Shell window not closing after exit.\
-1.0 - Initial release (2011).
+1.0 - Initial release.
