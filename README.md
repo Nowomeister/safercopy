@@ -53,7 +53,7 @@ USAGE
 
 *** Please use stack 32768 ***
 
-BUF/BUFFER : actually uses the specified buffer size (default 512KB).\
+BUF/BUFFER : actually uses the specified buffer size (default 512KB).
 
 DATES : actually calls SetFileDate() when specified alone, without
 requiring CLONE.
