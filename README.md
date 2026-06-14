@@ -10,9 +10,7 @@ Architecture: m68k-amigaos\
 SaferCopy 1.42 - A reliable replacement for AmigaDOS Copy 47.7
 
 
-
 ![A successful copy](/images/safercopy.png)
-
 
 
 BACKGROUND
@@ -40,11 +38,16 @@ FEATURES
 - Show progress percentage for large copies
 
 TESTED (MD5, etc) on Amiga 4000, 3000T, WinUAE, over a tremendous amount
-of files. And again.
+of files. And again. Aaand again. And again. Man, it's exhausting.
 
 It works for me, but I can't garantee it won't burn down your house to
 the ground so please make a copy of it first... Uhh wait.. :D
 It comes with no garantee whatsoever.
+
+Thanks to Kolla for the testing.
+
+It's been fixed.. or not.. with the help of Claude Opus 4.8
+
 
 USAGE
 
@@ -53,11 +56,15 @@ USAGE
 BUF/BUFFER : actually uses the specified buffer size (default 512KB).\
 
 DATES : actually calls SetFileDate() when specified alone, without
-requiring CLONE.\
+requiring CLONE.
 
 VERIFY : actually re-reads the destination after every write and
 compares byte-for-byte with the source. Corrupted files are replaced
-immediately.\
+immediately.
+
+PROGRESS : show a live percentage while copying, for files larger than
+2 MB (updates in place on one line). Handy for big disk images over slow
+media. Suppressed by QUIET.
 
 UPDATE : skips files where destination exists with identical size and
 datestamp. Re-copies if destination is smaller (previous interrupted
@@ -75,14 +82,12 @@ MAXERR/K/N : abort after N errors. Useful for unattended large copies
 over unreliable media. Default 0 = no limit.\
 
 FORCE : strips write-protection from destination before copying.\
-\
+
 CHECK : audit mode - no files are copied. For each source file,
 compares size against destination and reports Missing or SizeDiff.\
-\
+
 Combine with NDATE for a fast size-only scan. Useful before a resume\
 to see what actually needs attention.
-\
-
 
 NAMELEN/K/N : reports (and skips) any file or directory whose name is
 longer than N characters. PFS3 volumes keep the FFS default of 30
@@ -130,7 +135,7 @@ Example (do it):   SaferCopy FROM DH0: TO Backup: ALL RENAME NAMELEN=30
 
 
 PROGRESS : show progress percentage for large copies\
-\
+
 Example: SaferCopy FROM Work: TO Backup: ALL CHECK NDATE\
 
 TEMPLATE
@@ -139,6 +144,7 @@ NOPRO/S,VERIFY/S,NOREQ/S,UPDATE/S,FORCE/S,MAXERR/K/N,NDATE/S,VERBOSE/S,
 CHECK/S, NAMELEN/K/N, RENAME/S, PROGRESS/S
 
 Type "SaferCopy ?" for an interactive argument prompt.
+
 
 EXAMPLES
 
@@ -165,12 +171,14 @@ LANGUAGES
 
 The catalogs are LLM translated. Please report in case of impediments...
 
-Catalogs are included for: english, francais, deutsch, espanol,
-nederlands, dansk, norsk, polski, czech, slovensko, portugues, catala,
-euskara, turkce, srpski, russian, greek, roman.
+Catalogs are included for:
+  catala, czech, dansk, deutsch, english, espanol, euskara, francais,
+  greek, italiano, nederlands, norsk, polski, portugues, roman,
+  russian, slovensko, srpski, turkce.
 
 Install: copy catalogs/$LANGUAGE/SaferCopy.catalog to
 LOCALE:Catalogs/$LANGUAGE/SaferCopy.catalog
+
 
 COMPILATION
 
@@ -183,12 +191,15 @@ IDIR=NDK3.2:Include
 The -resident / RESIDENT options produce a pure (re-entrant) binary that
 can be made resident with the Shell RESIDENT command.
 
+
 SOURCES
 
 Available on GitHub, https://github.com/Nowomeister/safercopy/
 
+
 TODO:
 Test on OS 2.04, 3.0, 3.1.
+
 
 HISTORY
 
@@ -200,8 +211,8 @@ HISTORY
       reconfigured for long names (PFS3 setfsname); CHECK gives a dry-run
       preview. Added PROGRESS/S: live percentage while copying files
       larger than 2 MB. Claude fixed C89 mistakes for SAS/C (declarations
-      after statements, // comments, a long-long percentage calc).\
-1.4.1 - Let's not talk about it, would you?\
+      after statements, // comments, a long-long percentage calc).
+1.4.1 - Let's not talk about it, would you?
 1.4 - Fixed a stack smash in the error logger: error messages for paths
       longer than ~350 characters overflowed a fixed 384-byte buffer
       (NOSTKCHK + no MMU = silent corruption, delayed lockup on long
@@ -219,17 +230,15 @@ HISTORY
       destination. Optional pure/residentable build (GCC -resident
       "pure" make target, SAS/C RESIDENT + cres.o); the default binary
       stays non-resident until the pure variant is validated on real
-      hardware.\
+      hardware.
 1.3 - Fixed lockup on directory names containing AmigaDOS pattern
       special characters (& ~ # ? ( ) [ ] | %). Added CHECK/S audit
-      mode (size comparison, no copy).\
+      mode (size comparison, no copy).
 1.2 - Added locale catalog support (18 languages), $VER string,
-      minimum OS version check (V37 / AmigaOS 2.04+).\
-1.1 - Added NDATE, VERBOSE, recursive mkdir, fixed sys: path handling,
-      fixed Shell window not closing after exit.\
-1.0 - Initial release.
-
+      minimum OS version check (V37 / AmigaOS 2.04+).
 1.1 - Added NDATE, VERBOSE, recursive mkdir, fixed sys: path handling,
       fixed Shell window not closing after exit.
-
+1.0 - Initial release.
+1.1 - Added NDATE, VERBOSE, recursive mkdir, fixed sys: path handling,
+      fixed Shell window not closing after exit.
 1.0 - Initial release (2011).
