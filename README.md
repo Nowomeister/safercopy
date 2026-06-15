@@ -7,7 +7,7 @@ Date: 2026.06.11\
 Requires: AmigaOS 2.04+ (V37), 68000+\
 Architecture: m68k-amigaos\
 
-SaferCopy 1.4.2 - A reliable replacement for AmigaDOS Copy 47.7
+SaferCopy 1.4.3 - A reliable replacement for AmigaDOS Copy 47.7
 
 
 ![A successful copy](/images/safercopy.png)
@@ -204,8 +204,15 @@ Test on OS 2.04, 3.0, 3.1.
 
 
 HISTORY
-
-
+1.4.3 - Directory enumeration rewritten with Lock/ExNext (literal names)
+      instead of MatchFirst with an escaped pattern: names containing
+      AmigaDOS pattern characters (& # ? ( ) | ~ [ ] %) - very common in
+      WHDLoad collections (e.g. CaptainPlanet&Planeteers) - were being
+      silently skipped along with their whole subtree and now copy
+      correctly. Incomplete directory scans are reported instead of
+      dropping the rest of a directory in silence. Ctrl-C now closes the
+      destination and deletes the partial copy cleanly, instead of
+      leaking an open file handle (object in use).\
 1.4.2 - Added NAMELEN/K/N: report (and with RENAME, match) names longer
       than N characters. Added RENAME/S: repair a previously-truncated
       backup by renaming the short destination names back to their full
