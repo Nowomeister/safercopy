@@ -203,7 +203,7 @@ TODO:
 Test on OS 2.04, 3.0, 3.1.
 
 
-HISTORY
+HISTORY\
 1.4.3 - Directory enumeration rewritten with Lock/ExNext (literal names)
       instead of MatchFirst with an escaped pattern: names containing
       AmigaDOS pattern characters (& # ? ( ) | ~ [ ] %) - very common in
