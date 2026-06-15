@@ -1,0 +1,111 @@
+PFS3 write errors caused by HDToolBox cylinder geometry overrunning the media
+=============================================================================
+
+Summary
+-------
+We created an 80 GB disk image (hardfile) under WinUAE, prepared it under
+WinUAE with AmigaOS 3.2.3 (HDToolBox, "max capacity" selected), with a single
+partition formatted as PFS3 on AmigaOS. After a while, writing to that
+partition produced PFS-III error requesters and on-disk index corruption. The
+cause is not PFS3, not the copy tool, and not TD64: HDToolBox laid out a
+partition whose cylinder geometry addresses blocks beyond the real end of the
+media.
+
+
+Symptoms
+--------
+- "PFS-III Error Requester ... Write 2 Error 173 on block <N> + 256",
+  with SCSI sense data (Direct SCSI Transfer enabled).
+- Shortly after, "Wrong index block id 00000000, expected <id>, block <M>" -
+  i.e. a metadata/index block that should hold a valid ID reads back as
+  zeroes (corruption inflicted by the failed write).
+- Intermittent: many gigabytes copy fine, then it fails. It got *more*
+  likely as the partition filled up.
+- A copy tool that checks its writes reports the failed Write() (return
+  value -1) and deletes the truncated destination file - correct behaviour,
+  and a useful confirmation that the failure is below the filesystem, in the
+  device/geometry layer.
+
+
+Root cause
+----------
+HDToolBox partitions in whole CYLINDERS, derived from heads x sectors and the
+reported drive size. It does NOT cross-check the resulting total
+(cylinders x heads x sectors) against the device's real block count, and it
+does not clamp the last cylinder to the media. When the real media size is not
+an exact multiple of the cylinder size, the last cylinder (and therefore the
+last partition, if it runs to the end of the drive) maps to blocks that do not
+physically exist.
+
+PFS3 then trusts that oversized geometry: it counts those non-existent tail
+blocks as free space and, because its allocator roves across the whole
+partition rather than filling bottom-up, it eventually allocates into that
+"phantom" tail. The write falls off the end of the device, the driver returns
+an error, and the index update that accompanied the write is left corrupt.
+
+
+The numbers (this case)
+-----------------------
+Physical image : 80.00 GiB = 85,899,345,920 bytes = 167,772,160 sectors (512 B)
+                 -> valid sectors 0 .. 167,772,159
+Geometry       : 41122 cylinders x 16 heads x 255 sectors = 4080 sectors/cyl
+                 41122 x 4080 = 167,777,760 sectors declared
+Phantom tail   : 167,777,760 - 167,772,160 = 5,600 sectors (~2.7 MB) that the
+                 geometry claims but the image does not contain.
+
+The failing write was at sector 167772125 + 256, i.e. it reached sector
+167,772,381 - about 222 sectors past the physical end. That is the first
+allocation that landed in the 5,600-sector phantom tail.
+
+Note: 167,772,160 / 4080 = 41121.6 - NOT an integer. An exactly-80.00-GiB
+image simply cannot be expressed as a whole number of 4080-sector cylinders,
+so the geometry must either waste space or overrun. HDToolBox rounded up and
+overran.
+
+
+Why it looked random / hardware-related
+---------------------------------------
+- It is NOT a TD64 / >4GB addressing problem. With AmigaOS 3.2.3 ROMs TD64 is
+  native (no loadable patch to corrupt), and WinUAE's uaehf.device handles
+  64-bit access correctly. The block was simply past the end of the file.
+- It is NOT the filesystem block size: the filesystem block size was 4096
+  bytes, but the device error is reported in 512-byte sectors. (If 167772125
+  were a 4096-byte block it would be ~687 GB, impossible on an 80 GB drive -
+  so it must be a 512-byte sector, ~80 GiB.)
+- It got worse as the partition filled because PFS3's roving allocator only
+  reaches the high (phantom) blocks once the lower space is busy.
+
+
+Workaround / fix
+----------------
+Keep the partition strictly inside the real media:
+
+1. Reduce the last partition's End Cyl so its last sector is <= (real sectors
+   - 1), leaving one or two cylinders of slack at the very end of the drive.
+   In this case End Cyl 41119 was the highest safe value:
+       (41119 + 1) x 4080 - 1 = 167,769,599  <=  167,772,159   (OK)
+   End Cyl 41120 still included 1,520 phantom sectors; 41121 was all phantom.
+   Changing the geometry requires re-partitioning and reformatting that
+   partition.
+
+2. Alternatively, size the hardfile to a whole number of cylinders
+   (cylinders x heads x sectors x 512 bytes) instead of a round binary size,
+   so the geometry matches the media exactly.
+
+3. After fixing the geometry, run pfsdoctor on the partition to repair the
+   index block already corrupted by the earlier failed write.
+
+General rule (long-standing Amiga practice): never let the last partition end
+on the drive's very last cylinder - always leave a cylinder or two of slack.
+The same applies to real drives: a disk sold as "80 GB" almost never maps to a
+clean cylinders x heads x sectors, and HDToolBox will round the same way, so
+build the RDB from the drive's real capacity and leave end slack.
+
+
+Environment
+-----------
+- WinUAE, hardfile in full-drive / RDB mode, uaehf.device, Windows 11 host.
+- AmigaOS 3.2.3 ROMs.
+- HDToolBox (official), "Direct SCSI Transfer" enabled, Custom File System
+  (PFS3), filesystem block size 4096.
+- Target hardware for the final drive: Commodore A3000 onboard SCSI.

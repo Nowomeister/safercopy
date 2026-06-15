@@ -51,10 +51,10 @@
 
 /* --- Version ----------------------------------------------------- */
 /*
- * $VER: SaferCopy 1.4.2 (2026.06.14) Nowee with Claude
+ * $VER: SaferCopy 1.4.3 (2026.06.14) Nowee with Claude
  * Parsed by Version, VersionWB, and the Aminet indexer.
  */
-const char * const version = "$VER: SaferCopy 1.4.2 (2026.06.14) Nowee with Claude";
+const char * const version = "$VER: SaferCopy 1.4.3 (2026.06.14) Nowee with Claude";
 
 /* --- Includes ---------------------------------------------------- */
 #include <proto/dos.h>
@@ -78,12 +78,33 @@ const char * const version = "$VER: SaferCopy 1.4.2 (2026.06.14) Nowee with Clau
 #  define INLINE __inline__
 #endif
 
+/* --- Gestion du Ctrl-C ------------------------------------------- */
+/*
+ * Par defaut, la lib C (libnix comme SAS/C) intercepte SIGBREAKF_CTRL_C
+ * au prochain appel stdio (printf, etc.), affiche "***Break" et tue le
+ * programme par un exit() automatique. Probleme : ca court-circuite
+ * NOTRE nettoyage -> le fichier destination ouvert par Open() n est
+ * jamais ferme. Sur AmigaOS un FileHandle non ferme ne fuite pas que
+ * la memoire : il garde le fichier OUVERT cote handler (objet en
+ * utilisation) ET laisse un fichier partiel. Et c est devenu visible
+ * avec PROGRESS, dont le printf par bloc est justement l endroit ou la
+ * lib teste le Ctrl-C en plein milieu d un fichier.
+ *
+ * On neutralise donc l abort automatique (ces hooks deviennent vides)
+ * et on teste SIGBREAKF_CTRL_C nous-memes (CheckBreak) pour fermer
+ * proprement et supprimer le fichier incomplet.
+ */
+void __chkabort(void) { }       /* libnix + SAS/C : pas d abort auto */
+#ifdef __SASC
+int  CXBRK(void)  { return 0; } /* SAS/C : idem cote stdio           */
+#endif
+
 /* --------------------------------------------------------------*/
 /*  Template                                                            */
 /* --------------------------------------------------------------*/
 
 /* OS minimum : AmigaOS 2.0 (exec V36 = kick 2.0, DOS V36).
- * On exige V37 (2.04) pour ReadArgs, MatchFirst/Next, etc.
+ * On exige V37 (2.04) pour ReadArgs, etc.
  * V37 est le minimum documenté pour l usage de ces APIs. */
 #define MIN_OSVER  37
 
@@ -225,6 +246,7 @@ static struct {
                            (deux noms longs -> meme nom court). Detail
                            ligne par ligne en VERBOSE seulement.       */
     BOOL    abort;      /* mis a 1 quand maxErr est depasse          */
+    BOOL    userBreak;  /* mis a 1 sur Ctrl-C (SIGBREAKF_CTRL_C)     */
     LONG    retCode;
     APTR    oldWinPtr;  /* pr_WindowPtr original pour NOREQ         */
     BOOL    noreqSet;   /* TRUE si on a modifie pr_WindowPtr.
@@ -276,7 +298,6 @@ static INLINE BOOL xAddPart(char *o, const char *l, ULONG n)
 static BOOL  CopyFile   (const char *src, const char *dst);
 static BOOL  VerifyFiles(const char *src, const char *dst);
 static void  CopyDir    (const char *src, const char *dst);
-static void  EscapeAmigaPattern(char *out, ULONG outlen, const char *in);
 static BOOL  NeedsCopy  (const char *src, const char *dst);
 static BOOL  EnsureDir  (const char *path);
 static BOOL  EnsurePath (const char *path);
@@ -295,6 +316,8 @@ static void  RenameFile (const char *dst, const char *leaf,
                          char *truncBuf);
 static void  PrintErrors(void);
 static void  CheckAbort (void);
+static BOOL  CheckBreak (void);
+static void  ScanEndCheck(LONG rc, const char *src);
 static void  Die        (LONG code);
 
 /* --------------------------------------------------------------*/
@@ -459,6 +482,8 @@ int main(void)
         char        dst[MAXPATH];
         char        tdst[MAXPATH];   /* RENAME : chemin tronque       */
 
+        if (CheckBreak()) break;
+
         if (IsDir(src, NULL))
         {
             if (!G.all)
@@ -544,18 +569,25 @@ int main(void)
     /* --- Rapport final -------------------------------------------- */
     PrintErrors();   /* toujours, meme en mode QUIET */
 
-    if (G.rename)
     {
-        if (!G.quiet || G.nErrors > 0)
-            OUT(CS(MSG_RENAME_REPORT,
-                   "SaferCopy: %ld renamed  %ld skipped  %ld missing  %ld error(s)%s\n"),
-                (long)G.nRenamed, (long)G.nSkipped, (long)G.nMissing, (long)G.nErrors,
-                G.abort ? CS(MSG_ABORT_TAG, "  [ABORT: MAXERR reached]") : "");
+        /* Tag de fin : Ctrl-C prioritaire sur MAXERR. */
+        const char *tag = G.userBreak
+            ? CS(MSG_BREAK_TAG, "  [** user break **]")
+            : (G.abort ? CS(MSG_ABORT_TAG, "  [ABORT: MAXERR reached]") : "");
+
+        if (G.rename)
+        {
+            if (!G.quiet || G.nErrors > 0)
+                OUT(CS(MSG_RENAME_REPORT,
+                       "SaferCopy: %ld renamed  %ld skipped  %ld missing  %ld error(s)%s\n"),
+                    (long)G.nRenamed, (long)G.nSkipped, (long)G.nMissing, (long)G.nErrors,
+                    tag);
+        }
+        else if (!G.quiet || G.nErrors > 0)
+            OUT(CS(MSG_FINAL_REPORT, "SaferCopy: %ld copied  %ld skipped  %ld error(s)%s\n"),
+                (long)G.nCopied, (long)G.nSkipped, (long)G.nErrors,
+                tag);
     }
-    else if (!G.quiet || G.nErrors > 0)
-        OUT(CS(MSG_FINAL_REPORT, "SaferCopy: %ld copied  %ld skipped  %ld error(s)%s\n"),
-            (long)G.nCopied, (long)G.nSkipped, (long)G.nErrors,
-            G.abort ? CS(MSG_ABORT_TAG, "  [ABORT: MAXERR reached]") : "");
 
     FreeArgs(rda);
     Die(G.retCode);
@@ -563,48 +595,9 @@ int main(void)
 }
 
 /* --------------------------------------------------------------*/
-/*  EscapeAmigaPattern                                                  */
-/*                                                                      */
-/*  Echappe les caracteres speciaux AmigaDOS ParsePattern dans un       */
-/*  chemin afin qu il soit interprete litteralement par MatchFirst.     */
-/*                                                                      */
-/*  Caracteres speciaux (prefixes par apostrophe) :                     */
-/*    # ? ( ) | ~ [ ] % ' &                                             */
-/*  Separateurs de chemin non echappes : / :                            */
-/*                                                                      */
-/*  Exemple :                                                           */
-/*    "Games/Quick&Silva"  ->  "Games/Quick'&Silva"                     */
-/*    "Work:foo(bar)"      ->  "Work:foo'(bar')"                        */
-/* --------------------------------------------------------------*/
-
-static void EscapeAmigaPattern(char *out, ULONG outlen, const char *in)
-{
-    /* Tous les metacaracteres ParsePattern sauf / et : (separateurs). */
-    static const char specials[] = "#?()|~[]%'&";
-    ULONG o = 0;
-    const char *p;
-    const char *s;
-
-    for (p = in; *p && o + 2 < outlen; p++)
-    {
-        for (s = specials; *s; s++)
-        {
-            if (*p == *s)
-            {
-                out[o++] = '\'';   /* echappement AmigaDOS */
-                break;
-            }
-        }
-        if (o < outlen - 1)
-            out[o++] = *p;
-    }
-    out[o] = '\0';
-}
-
-/* --------------------------------------------------------------*/
 /*  ValidFibName                                                        */
 /*                                                                      */
-/*  Validation defensive du nom retourne par MatchFirst/MatchNext.     */
+/*  Validation defensive du nom retourne par ExNext.                   */
 /*  Une entree de repertoire corrompue (vu en vrai sur PFS3 :          */
 /*  "filename too long" + "corrupt directory entry" detectes par       */
 /*  PFSDoctor) peut produire un fib_FileName non termine, vide, ou     */
@@ -791,190 +784,193 @@ static void RenameFile(const char *dst, const char *leaf,
 }
 
 /* --------------------------------------------------------------*/
+/*  ScanEndCheck                                                        */
+/*                                                                      */
+/*  Apres une boucle Examine/ExNext, verifie POURQUOI elle s est        */
+/*  arretee. Fin normale = ERROR_NO_MORE_ENTRIES. Tout autre code = le  */
+/*  handler a echoue en plein scan (repertoire abime, erreur de lecture */
+/*  media) et le RESTE des entrees n a PAS ete parcouru.                */
+/*                                                                      */
+/*  Sans ce controle, l echec etait avale en silence : des fichiers     */
+/*  disparaissaient du backup sans le moindre message ni compteur       */
+/*  d erreur. Pour un copieur "Safer", c est inacceptable.              */
+/*                                                                      */
+/*  On ignore le cas G.abort (Ctrl-C / MAXERR) : la, rc peut valoir 0   */
+/*  car on a quitte la boucle volontairement, ce n est pas une erreur   */
+/*  de scan.                                                            */
+/* --------------------------------------------------------------*/
+static void ScanEndCheck(LONG rc, const char *src)
+{
+    if (!G.abort && rc != ERROR_NO_MORE_ENTRIES)
+    {
+        SetIoErr(rc);   /* pour que Fail() ajoute le libelle de l erreur */
+        Fail(CS(MSG_SCAN_INCOMPLETE,
+                "SaferCopy: directory scan incomplete - entries skipped"), src);
+        G.nErrors++;
+        G.retCode = RETURN_WARN;
+        CheckAbort();
+    }
+}
+
+/* --------------------------------------------------------------*/
 /*  CopyDir                                                             */
 /* --------------------------------------------------------------*/
 
 /*
  * Buffers de travail de CopyDir.
  *
- * CRITIQUE : CopyDir est recursive. Mettre ces buffers (~2 Ko) sur la
+ * CRITIQUE : CopyDir est recursive. Mettre ces buffers (~2.5 Ko) sur la
  * PILE a chaque niveau faisait deborder la pile sur les arbres profonds.
  * Sur 68k il n y a PAS de page de garde MMU : un debordement de pile
  * n envoie pas un Guru propre, il ecrase silencieusement les structures
  * d exec (liste des taches, etc.) -> lockup TOTAL, reset obligatoire.
- *
- * On alloue donc AnchorPath + buffers en un seul bloc sur le TAS.
- * La pile ne porte plus que des pointeurs (~100 octets / niveau) :
- * 32 Ko de pile encaissent maintenant 100+ niveaux de profondeur.
- *
- * Disposition du bloc :
- *   [ AnchorPath ][ MAXPATH : espace ap_Buf ][ DirBufs ]
- * L espace MAXPATH doit suivre immediatement AnchorPath car MatchFirst
- * y ecrit le chemin resolu (ap_Strlen octets).
+ * On les alloue donc sur le TAS ; la pile ne porte que des pointeurs.
  */
 struct DirBufs {
-    char pat[MAXPATH * 2 + 8];   /* x2 : pire cas echappement      */
-    char subdst[MAXPATH];        /* passe 1 : sous-repertoire dest  */
-    char dstfile[MAXPATH];       /* passe 2 : fichier dest          */
-    char truncdst[MAXPATH];      /* RENAME : chemin tronque cible   */
-    char descend[MAXPATH];       /* RENAME : dir ou recurser        */
+    char srcchild[MAXPATH];      /* chemin source complet de l entree */
+    char subdst[MAXPATH];        /* passe 1 : sous-repertoire dest    */
+    char dstfile[MAXPATH];       /* passe 2 : fichier dest            */
+    char truncdst[MAXPATH];      /* RENAME : chemin tronque cible     */
+    char descend[MAXPATH];       /* RENAME : dir ou recurser          */
 };
 
+/*
+ * CopyDir : enumere src via Lock + Examine + ExNext.
+ *
+ * On N UTILISE PLUS MatchFirst/pattern. ExNext prend des noms
+ * LITTERAUX : les noms contenant des metacaracteres AmigaDOS
+ * (& # ? ( ) | ~ [ ] %) passent SANS aucun echappement. L ancienne
+ * approche (chemin echappe -> MatchFirst) cassait sur les composants
+ * INTERMEDIAIRES d un chemin profond : MatchFirst lockait le nom
+ * echappe (avec l apostrophe) au lieu du vrai nom -> OBJECT_NOT_FOUND
+ * -> sous-arbre entier saute en silence (typiquement les jeux WHDLoad
+ * "Truc&Bidule"). Lock/ExNext supprime toute la classe de bugs.
+ *
+ * Deux passes (sous-repertoires d abord, puis fichiers) comme avant ;
+ * Examine() relance ExNext() depuis le debut entre les deux passes.
+ */
 static void CopyDir(const char *src, const char *dst)
 {
-    struct AnchorPath *ap;
-    struct DirBufs    *db;
-    UBYTE             *blk;
-    LONG               rc;
+    struct FileInfoBlock *fib;
+    struct DirBufs       *db;
+    BPTR                  lock;
+    const char           *leaf;
 
-    blk = (UBYTE *)AllocVec(sizeof(struct AnchorPath) + MAXPATH
-                            + sizeof(struct DirBufs),
-                            MEMF_CLEAR | MEMF_ANY);
-    if (!blk)
+    /* Lock LITTERAL : aucun pattern, aucun echappement, gere & # ? ... */
+    lock = xLock(src, ACCESS_READ);
+    if (!lock)
     {
-        ERR(CS(MSG_NO_ANCHORPATH, "SaferCopy: out of memory (AnchorPath)\n"));
-        G.nErrors++;
+        Fail(CS(MSG_SCAN_INCOMPLETE,
+                "SaferCopy: directory scan incomplete - entries skipped"), src);
+        G.nErrors++; G.retCode = RETURN_WARN; CheckAbort();
         return;
     }
-    ap = (struct AnchorPath *)blk;
-    db = (struct DirBufs *)(blk + sizeof(struct AnchorPath) + MAXPATH);
-    ap->ap_Strlen = MAXPATH;
 
-    /*
-     * Construire le pattern avec EscapeAmigaPattern + AddPart.
-     *
-     * PROBLEME : les noms de repertoires peuvent contenir des caracteres
-     * speciaux pour ParsePattern (ex: & | ~ # ? ( ) [ ] ' %).
-     * Exemple : "TheAdventuresOfQuick&Silva" -> ParsePattern interprete
-     * '&' comme un operateur ET -> lockup garanti.
-     *
-     * SOLUTION : echapper chaque caractere special avec une apostrophe
-     * avant d y ajouter le pattern /#? .
-     *
-     * Les separateurs / et : ne sont PAS echappes (ce sont des chemins).
-     */
-    EscapeAmigaPattern(db->pat, (ULONG)sizeof(db->pat) - 4, src);
-    xAddPart(db->pat, "#?", (ULONG)sizeof(db->pat));
-
-    /* Passe 1 : sous-repertoires (recurse en premier) */
-    rc = MatchFirst((STRPTR)db->pat, ap);
-    while (rc == 0 && !G.abort)
+    fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
+    db  = (struct DirBufs *)AllocVec(sizeof(struct DirBufs), MEMF_CLEAR | MEMF_ANY);
+    if (!fib || !db)
     {
-        if (ap->ap_Info.fib_DirEntryType > 0)
+        ERR(CS(MSG_NO_ANCHORPATH, "SaferCopy: out of memory (directory scan)\n"));
+        G.nErrors++;
+        if (db)  FreeVec(db);
+        if (fib) FreeDosObject(DOS_FIB, fib);
+        UnLock(lock);
+        return;
+    }
+
+    /* --- Passe 1 : sous-repertoires (recurse en premier) --- */
+    if (Examine(lock, fib))
+    {
+        while (!G.abort && ExNext(lock, fib))
         {
-            if (!ValidFibName((const char *)ap->ap_Info.fib_FileName))
+            if (CheckBreak()) break;
+            if (fib->fib_DirEntryType <= 0) continue;   /* fichiers -> passe 2 */
+
+            leaf = (const char *)fib->fib_FileName;
+            if (!ValidFibName(leaf))
             {
                 Fail(CS(MSG_BAD_DIRENTRY,
-                        "SaferCopy: corrupt directory entry - skipped"),
-                     (const char *)ap->ap_Buf);
-                G.nErrors++;
-                G.retCode = RETURN_WARN;
-                CheckAbort();
-                rc = MatchNext(ap);
+                        "SaferCopy: corrupt directory entry - skipped"), src);
+                G.nErrors++; G.retCode = RETURN_WARN; CheckAbort();
                 continue;
             }
+            JoinPathSafe(db->srcchild, MAXPATH, src, leaf, NULL);
+
             if (G.rename)
             {
-                RenameDir(dst, (const char *)ap->ap_Info.fib_FileName,
-                          (const char *)ap->ap_Buf,
+                RenameDir(dst, leaf, db->srcchild,
                           db->subdst, db->truncdst, db->descend);
                 if (db->descend[0])
-                    CopyDir((const char *)ap->ap_Buf, db->descend);
-                rc = MatchNext(ap);
+                    CopyDir(db->srcchild, db->descend);
                 continue;
             }
-            if (!JoinPathSafe(db->subdst, MAXPATH, dst,
-                             (const char *)ap->ap_Info.fib_FileName,
-                             (const char *)ap->ap_Buf))
+            if (!JoinPathSafe(db->subdst, MAXPATH, dst, leaf, db->srcchild))
             {
-                G.nErrors++;
-                G.retCode = RETURN_WARN;
-                CheckAbort();
-                rc = MatchNext(ap);
+                G.nErrors++; G.retCode = RETURN_WARN; CheckAbort();
                 continue;
             }
             if (G.check)
             {
-                /* Mode CHECK : ne pas creer le repertoire.
-                 * On recurse quand meme : les fichiers manquants seront
-                 * signales par le bloc CHECK de la passe 2. */
-                CopyDir((const char *)ap->ap_Buf, db->subdst);
+                /* Mode CHECK : ne pas creer le repertoire ; on recurse
+                 * quand meme pour signaler les fichiers manquants. */
+                CopyDir(db->srcchild, db->subdst);
             }
             else if (!EnsureDir(db->subdst))
             {
                 Fail(CS(MSG_NO_MKDIR, "SaferCopy: cannot create"), db->subdst);
-                G.nErrors++;
-                CheckAbort();
+                G.nErrors++; CheckAbort();
             }
             else
             {
-                CopyDir((const char *)ap->ap_Buf, db->subdst);
+                CopyDir(db->srcchild, db->subdst);
             }
         }
-        rc = MatchNext(ap);
+        ScanEndCheck(IoErr(), src);   /* passe 1 : scan complet ? */
     }
-    MatchEnd(ap);
-
-    /*
-     * Reinitialiser l AnchorPath avant le second MatchFirst.
-     * L autodoc dos.library exige une structure mise a zero ;
-     * reutiliser l etat laisse par MatchEnd est indefini (AChain
-     * residuels -> fuite memoire progressive, scan corrompu).
-     * On efface aussi la zone ap_Buf (MAXPATH octets apres la
-     * structure) ; db->pat, situe au-dela, n est pas touche.
-     */
-    memset(ap, 0, sizeof(struct AnchorPath) + MAXPATH);
-    ap->ap_Strlen = MAXPATH;
-
-    /* Passe 2 : fichiers */
-    rc = MatchFirst((STRPTR)db->pat, ap);
-    while (rc == 0 && !G.abort)
+    else
     {
-        if (ap->ap_Info.fib_DirEntryType < 0)
+        Fail(CS(MSG_SCAN_INCOMPLETE,
+                "SaferCopy: directory scan incomplete - entries skipped"), src);
+        G.nErrors++; G.retCode = RETURN_WARN; CheckAbort();
+    }
+
+    /* --- Passe 2 : fichiers (Examine relance ExNext depuis le debut) --- */
+    if (!G.abort && Examine(lock, fib))
+    {
+        while (!G.abort && ExNext(lock, fib))
         {
-            if (!ValidFibName((const char *)ap->ap_Info.fib_FileName))
+            if (CheckBreak()) break;
+            if (fib->fib_DirEntryType >= 0) continue;   /* repertoires faits */
+
+            leaf = (const char *)fib->fib_FileName;
+            if (!ValidFibName(leaf))
             {
                 Fail(CS(MSG_BAD_DIRENTRY,
-                        "SaferCopy: corrupt directory entry - skipped"),
-                     (const char *)ap->ap_Buf);
-                G.nErrors++;
-                G.retCode = RETURN_WARN;
-                CheckAbort();
-                rc = MatchNext(ap);
+                        "SaferCopy: corrupt directory entry - skipped"), src);
+                G.nErrors++; G.retCode = RETURN_WARN; CheckAbort();
                 continue;
             }
+            JoinPathSafe(db->srcchild, MAXPATH, src, leaf, NULL);
+
             if (G.rename)
             {
-                RenameFile(dst, (const char *)ap->ap_Info.fib_FileName,
-                           (const char *)ap->ap_Buf,
-                           db->dstfile, db->truncdst);
-                rc = MatchNext(ap);
+                RenameFile(dst, leaf, db->srcchild, db->dstfile, db->truncdst);
                 continue;
             }
-            if (!JoinPathSafe(db->dstfile, MAXPATH, dst,
-                             (const char *)ap->ap_Info.fib_FileName,
-                             (const char *)ap->ap_Buf))
+            if (!JoinPathSafe(db->dstfile, MAXPATH, dst, leaf, db->srcchild))
             {
-                G.nErrors++;
-                G.retCode = RETURN_WARN;
-                CheckAbort();
-                rc = MatchNext(ap);
+                G.nErrors++; G.retCode = RETURN_WARN; CheckAbort();
                 continue;
             }
 
             if (G.check)
             {
-                /* CHECK inline : MatchFirst a deja fourni fib_Size de la
-                 * source -> zero re-lock source, un seul Lock destination.
-                 * Evite de doubler les packets DOS/Poseidon par fichier. */
+                /* CHECK : fib (source) a deja fib_Size -> un seul Lock dest. */
                 BPTR dl = xLock(db->dstfile, ACCESS_READ);
                 if (!dl)
                 {
-                    OUT(CS(MSG_CHECK_MISSING, "  Missing  %s\n"),
-                        (char *)ap->ap_Buf);
-                    G.nErrors++;
-                    G.retCode = RETURN_WARN;
-                    CheckAbort();
+                    OUT(CS(MSG_CHECK_MISSING, "  Missing  %s\n"), db->srcchild);
+                    G.nErrors++; G.retCode = RETURN_WARN; CheckAbort();
                 }
                 else
                 {
@@ -982,41 +978,37 @@ static void CopyDir(const char *src, const char *dst)
                         (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL);
                     if (df && Examine(dl, df))
                     {
-                        if (df->fib_Size == ap->ap_Info.fib_Size)
+                        if (df->fib_Size == fib->fib_Size)
                         {
                             if (G.verbose)
                                 OUT(CS(MSG_CHECK_OK, "  OK       %s\n"),
-                                    (char *)ap->ap_Buf);
+                                    db->srcchild);
                             G.nSkipped++;
                         }
                         else
                         {
                             OUT(CS(MSG_CHECK_MISMATCH,
                                    "  SizeDiff %s  (src=%ld  dst=%ld)\n"),
-                                (char *)ap->ap_Buf,
-                                (long)ap->ap_Info.fib_Size,
-                                (long)df->fib_Size);
-                            G.nErrors++;
-                            G.retCode = RETURN_WARN;
-                            CheckAbort();
+                                db->srcchild,
+                                (long)fib->fib_Size, (long)df->fib_Size);
+                            G.nErrors++; G.retCode = RETURN_WARN; CheckAbort();
                         }
                     }
                     if (df) FreeDosObject(DOS_FIB, df);
                     UnLock(dl);
                 }
             }
-            else if (!CopyFile((const char *)ap->ap_Buf, db->dstfile))
+            else if (!CopyFile(db->srcchild, db->dstfile))
             {
-                G.nErrors++;
-                G.retCode = RETURN_WARN;
-                CheckAbort();
+                G.nErrors++; G.retCode = RETURN_WARN; CheckAbort();
             }
         }
-        rc = MatchNext(ap);
+        ScanEndCheck(IoErr(), src);   /* passe 2 : scan complet ? */
     }
-    MatchEnd(ap);
 
-    FreeVec(blk);
+    FreeVec(db);
+    FreeDosObject(DOS_FIB, fib);
+    UnLock(lock);
 }
 
 /* --------------------------------------------------------------*/
@@ -1059,8 +1051,8 @@ static BOOL CopyFile(const char *src, const char *dst)
 
     /* --- NAMELEN : filet de securite sur le nom DESTINATION ----- */
     /* Les chemins venant de CopyDir ou de la boucle principale     */
-    /* sont deja passes par JoinPathLim (filtres ou tronques).      */
-    /* Ne reste que le cas TO=nom explicite trop long.              */
+    /* sont deja passes par JoinPathSafe (signales+sautes si trop   */
+    /* longs). Ne reste que le cas TO=nom explicite trop long.      */
     if (G.nameMax > 0)
     {
         LONG n = (LONG)strlen(xPart(dst));
@@ -1170,6 +1162,11 @@ static BOOL CopyFile(const char *src, const char *dst)
                    (fib->fib_Size > (2L * 1024L * 1024L));
     while ((nRead = Read(srcFH, G.buf, G.bufSize)) > 0)
     {
+        /* Ctrl-C : on sort proprement. Le bloc !ok plus bas ferme
+         * dstFH/srcFH et supprime le fichier partiel -> pas de fuite
+         * de handle (objet en utilisation), pas de fichier tronque. */
+        if (CheckBreak()) { ok = FALSE; break; }
+
         nWritten = Write(dstFH, G.buf, nRead);
         if (nWritten != nRead)
         {
@@ -1270,6 +1267,8 @@ static BOOL VerifyFiles(const char *src, const char *dst)
     ok = TRUE;
     for (;;)
     {
+        if (CheckBreak()) { ok = FALSE; break; }
+
         rSrc = Read(srcFH, G.buf,  G.bufSize);
         rDst = Read(dstFH, G.vbuf, G.bufSize);
 
@@ -1382,23 +1381,28 @@ static BOOL EnsureDir(const char *path)
 
 /*
  * JoinPathSafe :
- *   Construit un chemin destination de façon sûre.
- *   Si G.nameMax > 0 et que 'leaf' dépasse la limite :
- *     - Appelle FailNameLen(errorPath) si errorPath != NULL
- *     - Retourne FALSE
- *   Sinon construit le chemin et retourne le résultat de xAddPart.
+ *   Construit out = dir + leaf (separateur AmigaDOS via AddPart).
+ *
+ *   errorPath != NULL : applique la politique NAMELEN. Si nameMax > 0
+ *     et que leaf depasse la limite, signale (FailNameLen(errorPath))
+ *     et retourne FALSE SANS construire -> le caller saute l entree.
+ *     C est le cas des copies (audit/skip des noms trop longs).
+ *
+ *   errorPath == NULL : construit TOUJOURS, sans controle de longueur.
+ *     C est volontaire : les appelants RENAME (RenameDir/RenameFile,
+ *     BuildTrunc) doivent fabriquer le chemin complet d un nom long -
+ *     c est precisement leur travail. Remplace l ancien JoinPath.
  */
 static BOOL JoinPathSafe(char *out, LONG outlen,
                          const char *dir, const char *leaf,
                          const char *errorPath)
 {
-    if (G.nameMax > 0)
+    if (errorPath && G.nameMax > 0)
     {
         LONG n = (LONG)strlen(leaf);
         if (n > G.nameMax)
         {
-            if (errorPath)
-                FailNameLen(errorPath, n);
+            FailNameLen(errorPath, n);
             return FALSE;
         }
     }
@@ -1573,6 +1577,32 @@ static void CheckAbort(void)
             Fail(msg, NULL);
         }
     }
+}
+
+/*
+ * CheckBreak : teste SIGBREAKF_CTRL_C (Ctrl-C). Au premier passage il
+ * arme G.abort/G.userBreak pour que toutes les boucles s arretent et
+ * que la copie en cours ferme ses handles et supprime le fichier
+ * partiel. Appele dans la boucle de copie (et de verify) ; les boucles
+ * exterieures (main, CopyDir) testent deja G.abort.
+ */
+static BOOL CheckBreak(void)
+{
+    if (G.userBreak) return TRUE;   /* deja signale, ne pas repeter */
+
+    if (SetSignal(0L, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+    {
+        G.userBreak = TRUE;
+        G.abort     = TRUE;
+        if (G.retCode < RETURN_WARN) G.retCode = RETURN_WARN;
+        if (!G.quiet)
+        {
+            OUT("\n");
+            ERR(CS(MSG_BREAK, "*** Break - cleaning up\n"));
+        }
+        return TRUE;
+    }
+    return FALSE;
 }
 
 static void ShowProgress(ULONG done, ULONG total)

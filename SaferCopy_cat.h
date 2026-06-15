@@ -57,5 +57,8 @@
 #define MSG_RENAME_NEEDS_DIR   47
 #define MSG_RENAME_REPORT      48
 #define MSG_RENAME_NOTRUNC     49
+#define MSG_BREAK              50
+#define MSG_BREAK_TAG         51
+#define MSG_SCAN_INCOMPLETE   52
 
 #endif /* SAFERCOPY_CAT_H */

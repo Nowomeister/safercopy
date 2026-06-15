@@ -60,7 +60,7 @@ MSG_IS_DIR_USE_ALL (16///)
 SaferCopy: '%s' is a directory - use ALL
 
 MSG_NO_ANCHORPATH (17///)
-SaferCopy: out of memory (AnchorPath)
+SaferCopy: out of memory (directory scan)
 
 MSG_SRC_INACCESSIBLE (18///)
 SaferCopy: source not accessible
@@ -157,3 +157,12 @@ SaferCopy: %ld renamed  %ld skipped  %ld missing  %ld error(s)%s
 
 MSG_RENAME_NOTRUNC (49///)
   Missing  %s  (looked for: %s)
+
+MSG_BREAK (50///)
+*** Break - cleaning up
+
+MSG_BREAK_TAG (51///)
+  [** user break **]
+
+MSG_SCAN_INCOMPLETE (52///)
+SaferCopy: directory scan incomplete - entries skipped
