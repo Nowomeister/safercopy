@@ -40,6 +40,10 @@ FEATURES
 TESTED (MD5, etc) on Amiga 4000, 3000T, WinUAE, over a tremendous amount
 of files. And again. Aaand again. And again. Man, it's exhausting.
 
+
+![A successful copy](/images/MD5_and_size.png)
+
+
 It works for me, but I can't garantee it won't burn down your house to
 the ground so please make a copy of it first... Uhh wait.. :D
 It comes with no garantee whatsoever.
